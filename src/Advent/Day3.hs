@@ -21,11 +21,8 @@ priority c = ord c - ord 'a' + 1
 tupToList :: (a, a) -> [a]
 tupToList (x, y) = [x, y]
 
-toSet :: ByteString -> S.Set Char
-toSet = S.fromList . B.unpack
-
 common :: [ByteString] -> [Char]
-common = S.toList . foldl1' S.intersection . fmap toSet
+common = S.toList . foldl1' S.intersection . fmap (S.fromList . B.unpack)
 
 halve :: ByteString -> (ByteString, ByteString)
 halve bs = B.splitAt (B.length bs `div` 2) bs
