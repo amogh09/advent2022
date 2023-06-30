@@ -1,10 +1,10 @@
-module Advent.Day2 (solve, solve2) where
+module Advent.Day2 (solve1, solve2) where
 
 import Data.ByteString.Lazy.Char8 (ByteString)
 import qualified Data.ByteString.Lazy.Char8 as B
 
-solve :: ByteString -> ByteString
-solve = solveAny table
+solve1 :: ByteString -> ByteString
+solve1 = solveAny table
 
 solve2 :: ByteString -> ByteString
 solve2 = solveAny table2

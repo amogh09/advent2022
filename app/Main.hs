@@ -17,10 +17,10 @@ main = do
   B.readFile inputFile >>= B.putStrLn . solve day part
 
 solve :: String -> String -> ByteString -> ByteString
-solve "day1" "part1" = Day1.solve
+solve "day1" "part1" = Day1.solve1
 solve "day1" "part2" = Day1.solve2
-solve "day2" "part1" = Day2.solve
+solve "day2" "part1" = Day2.solve1
 solve "day2" "part2" = Day2.solve2
-solve "day3" "part1" = Day3.solve
+solve "day3" "part1" = Day3.solve1
 solve "day3" "part2" = Day3.solve2
 solve _ _ = error "bad input day and part"

@@ -1,4 +1,4 @@
-module Advent.Day3 (solve, solve2) where
+module Advent.Day3 (solve1, solve2) where
 
 import Data.ByteString.Lazy.Char8 (ByteString)
 import qualified Data.ByteString.Lazy.Char8 as B
@@ -7,8 +7,8 @@ import Data.List (foldl1')
 import Data.List.Split (chunksOf)
 import qualified Data.Set as S
 
-solve :: ByteString -> ByteString
-solve = B.pack . show . sum . fmap (sum . fmap priority . common . tupToList . halve) . B.lines
+solve1 :: ByteString -> ByteString
+solve1 = B.pack . show . sum . fmap (sum . fmap priority . common . tupToList . halve) . B.lines
 
 solve2 :: ByteString -> ByteString
 solve2 = B.pack . show . sum . fmap (priority . head . common) . chunksOf 3 . B.lines

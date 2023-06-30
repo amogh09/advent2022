@@ -1,12 +1,12 @@
-module Advent.Day1 (solve, solve2) where
+module Advent.Day1 (solve1, solve2) where
 
 import Data.ByteString.Lazy.Char8 (ByteString)
 import qualified Data.ByteString.Lazy.Char8 as B
 import Data.List (sortOn)
 import Data.List.Split (splitWhen)
 
-solve :: ByteString -> ByteString
-solve = B.pack . show . maximum . calories
+solve1 :: ByteString -> ByteString
+solve1 = B.pack . show . maximum . calories
 
 solve2 :: ByteString -> ByteString
 solve2 = B.pack . show . sum . take 3 . sortOn negate . calories
