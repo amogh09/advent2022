@@ -19,7 +19,7 @@ common warnings
     ghc-options: -Wall
 
 common extensions
-    default-extensions: OverloadedStrings
+    default-extensions: OverloadedStrings, ScopedTypeVariables
 
 library
     import:           warnings, extensions
@@ -28,12 +28,15 @@ library
         Advent.Day2
         Advent.Day3
         Advent.Day4
+        Advent.Day5
+        Advent.Util
 
     build-depends:
         , base        ^>=4.16.4.0
         , bytestring  ^>=0.11.4.0
         , containers  ^>=0.6.7
         , split       ^>=0.2.3.5
+        , vector      ^>=0.13.0.0
 
     hs-source-dirs:   src
     default-language: Haskell2010
