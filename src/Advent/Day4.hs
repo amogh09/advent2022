@@ -4,13 +4,13 @@ import Data.ByteString.Lazy.Char8 (ByteString)
 import qualified Data.ByteString.Lazy.Char8 as B
 
 solve1 :: ByteString -> ByteString
-solve1 = solve (fromEnum . uncurry anyIncludes . parsePairs)
+solve1 = solve anyIncludes
 
 solve2 :: ByteString -> ByteString
-solve2 = solve (fromEnum . uncurry overlaps . parsePairs)
+solve2 = solve overlaps
 
-solve :: (Show b, Num b) => (ByteString -> b) -> ByteString -> ByteString
-solve f = B.pack . show . sum . fmap f . B.lines
+solve :: (Sections -> Sections -> Bool) -> ByteString -> ByteString
+solve f = B.pack . show . sum . fmap (fromEnum . uncurry f . parsePairs) . B.lines
 
 type Sections = (Int, Int)
 
