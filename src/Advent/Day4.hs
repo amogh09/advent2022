@@ -1,5 +1,6 @@
 module Advent.Day4 (solve1, solve2) where
 
+import Advent.Util (readInt)
 import Data.ByteString.Lazy.Char8 (ByteString)
 import qualified Data.ByteString.Lazy.Char8 as B
 
@@ -25,12 +26,6 @@ parseSections s =
   case B.split '-' s of
     [x, y] -> (readInt x, readInt y)
     _ -> error $ "invalid input: sections format invalid: " <> B.unpack s
-
-readInt :: ByteString -> Int
-readInt s =
-  case B.readInt s of
-    Just (x, s') | B.null s' -> x
-    _ -> error $ "invalid input: failed to parse to int: " <> B.unpack s
 
 anyIncludes :: Sections -> Sections -> Bool
 anyIncludes s s' = s `includes` s' || s' `includes` s
