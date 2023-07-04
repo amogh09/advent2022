@@ -1,4 +1,4 @@
-module Advent.Util (splitAtEmptyLines, readInt) where
+module Advent.Util (splitAtEmptyLines, readInt, maybeHead) where
 
 import Data.ByteString.Lazy.Char8 (ByteString)
 import qualified Data.ByteString.Lazy.Char8 as B
@@ -12,3 +12,7 @@ readInt s =
   case B.readInt s of
     Just (x, s') | B.null s' -> x
     _ -> error $ "invalid input: failed to parse to int: " <> B.unpack s
+
+maybeHead :: [a] -> Maybe a
+maybeHead [] = Nothing
+maybeHead (x : _) = Just x

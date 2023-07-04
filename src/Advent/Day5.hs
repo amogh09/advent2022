@@ -1,21 +1,18 @@
 module Advent.Day5 (solve1) where
 
-import Advent.Util (readInt, splitAtEmptyLines)
+import Advent.Util (maybeHead, readInt, splitAtEmptyLines)
 import Data.Bifunctor (Bifunctor (bimap))
 import Data.ByteString.Lazy.Char8 (ByteString)
 import qualified Data.ByteString.Lazy.Char8 as B
 import Data.List (foldl')
+import Data.Maybe (fromMaybe)
 import Data.Vector (Vector)
 import qualified Data.Vector as V
 
 solve1 :: ByteString -> ByteString
 solve1 s = do
   let (stacks, moves) = bimap parseStacks (fmap parseMove) . parseSections $ s
-  B.pack . V.toList . fmap top . foldl' move stacks $ moves
-
-top :: Stack -> Char
-top [] = ' '
-top (x : _) = x
+  B.pack . V.toList . fmap (fromMaybe ' ' . maybeHead) . foldl' move stacks $ moves
 
 parseSections :: ByteString -> ([ByteString], [ByteString])
 parseSections s =
