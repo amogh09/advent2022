@@ -26,5 +26,9 @@ tests =
     testCase "Day 5 Part 1 example" $ solve "day5" "part1" "example" >>= (@?= "CMZ"),
     testCase "Day 5 Part 1 real" $ solve "day5" "part1" "real" >>= (@?= "JRVNHHCSJ"),
     testCase "Day 5 Part 2 example" $ solve "day5" "part2" "example" >>= (@?= "MCD"),
-    testCase "Day 5 Part 2 real" $ solve "day5" "part2" "real" >>= (@?= "GNFBSBJLH")
+    testCase "Day 5 Part 2 real" $ solve "day5" "part2" "real" >>= (@?= "GNFBSBJLH"),
+    testCase "Day 6 Part 1 example" $ solve "day6" "part1" "example" >>= (@?= "7"),
+    testCase "Day 6 Part 1 real" $ solve "day6" "part1" "real" >>= (@?= "1356"),
+    testCase "Day 6 Part 2 example" $ solve "day6" "part2" "example" >>= (@?= "19"),
+    testCase "Day 6 Part 2 real" $ solve "day6" "part2" "real" >>= (@?= "2564")
   ]

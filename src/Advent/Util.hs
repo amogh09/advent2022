@@ -1,4 +1,4 @@
-module Advent.Util (splitAtEmptyLines, readInt, maybeHead) where
+module Advent.Util (splitAtEmptyLines, readInt, maybeHead, bshow) where
 
 import Data.ByteString.Lazy.Char8 (ByteString)
 import qualified Data.ByteString.Lazy.Char8 as B
@@ -16,3 +16,6 @@ readInt s =
 maybeHead :: [a] -> Maybe a
 maybeHead [] = Nothing
 maybeHead (x : _) = Just x
+
+bshow :: Show a => a -> ByteString
+bshow = B.pack . show

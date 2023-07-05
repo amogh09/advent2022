@@ -22,6 +22,7 @@ common extensions
     default-extensions:
         OverloadedStrings
         ScopedTypeVariables
+        BangPatterns
 
 library
     import:           warnings, extensions
@@ -31,6 +32,7 @@ library
         Advent.Day3
         Advent.Day4
         Advent.Day5
+        Advent.Day6
         Advent.Util
         Advent.Solver
 
