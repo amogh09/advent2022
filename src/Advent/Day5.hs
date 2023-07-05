@@ -1,4 +1,4 @@
-module Advent.Day5 (solve1) where
+module Advent.Day5 (solve1, solve2) where
 
 import Advent.Util (maybeHead, readInt, splitAtEmptyLines)
 import Data.Bifunctor (Bifunctor (bimap))
@@ -10,9 +10,15 @@ import Data.Vector (Vector)
 import qualified Data.Vector as V
 
 solve1 :: ByteString -> ByteString
-solve1 s = do
+solve1 = solve reverse
+
+solve2 :: ByteString -> ByteString
+solve2 = solve id
+
+solve :: (Stack -> Stack) -> ByteString -> ByteString
+solve f s = do
   let (stacks, moves) = bimap parseStacks (fmap parseMove) . parseSections $ s
-  B.pack . V.toList . fmap (fromMaybe ' ' . maybeHead) . foldl' move stacks $ moves
+  B.pack . V.toList . fmap (fromMaybe ' ' . maybeHead) . foldl' (move f) stacks $ moves
 
 parseSections :: ByteString -> ([ByteString], [ByteString])
 parseSections s =
@@ -50,9 +56,9 @@ parseMove s =
     ["move", n, "from", x, "to", y] -> Move (readInt n) (readInt x) (readInt y)
     _ -> error $ "invalid move line: " <> B.unpack s
 
-move :: Stacks -> Move -> Stacks
-move stacks (Move n x y) = do
+move :: (Stack -> Stack) -> Stacks -> Move -> Stacks
+move f stacks (Move n x y) = do
   let (src, dst) = (stacks V.! (x - 1), stacks V.! (y - 1))
       (xs, src') = splitAt n src
-      dst' = reverse xs ++ dst
+      dst' = f xs ++ dst
   stacks V.// [(x - 1, src'), (y - 1, dst')]

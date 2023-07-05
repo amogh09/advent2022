@@ -26,4 +26,5 @@ table "day3" "part2" = Day3.solve2
 table "day4" "part1" = Day4.solve1
 table "day4" "part2" = Day4.solve2
 table "day5" "part1" = Day5.solve1
+table "day5" "part2" = Day5.solve2
 table _ _ = error "bad input: day and part"
