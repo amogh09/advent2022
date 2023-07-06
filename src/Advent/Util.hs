@@ -1,4 +1,4 @@
-module Advent.Util (splitAtEmptyLines, readInt, maybeHead, bshow) where
+module Advent.Util (splitAtEmptyLines, readInt, maybeHead, bshow, readInteger) where
 
 import Data.ByteString.Lazy.Char8 (ByteString)
 import qualified Data.ByteString.Lazy.Char8 as B
@@ -10,6 +10,12 @@ splitAtEmptyLines = splitWhen B.null . B.lines
 readInt :: ByteString -> Int
 readInt s =
   case B.readInt s of
+    Just (x, s') | B.null s' -> x
+    _ -> error $ "invalid input: failed to parse to int: " <> B.unpack s
+
+readInteger :: ByteString -> Integer
+readInteger s =
+  case B.readInteger s of
     Just (x, s') | B.null s' -> x
     _ -> error $ "invalid input: failed to parse to int: " <> B.unpack s
 

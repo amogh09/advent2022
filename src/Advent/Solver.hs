@@ -6,6 +6,7 @@ import qualified Advent.Day3 as Day3
 import qualified Advent.Day4 as Day4
 import qualified Advent.Day5 as Day5
 import qualified Advent.Day6 as Day6
+import qualified Advent.Day7 as Day7
 import Data.ByteString.Lazy.Char8 (ByteString)
 import qualified Data.ByteString.Lazy.Char8 as B
 
@@ -30,4 +31,5 @@ table "day5" "part1" = Day5.solve1
 table "day5" "part2" = Day5.solve2
 table "day6" "part1" = Day6.solve1
 table "day6" "part2" = Day6.solve2
+table "day7" "part1" = Day7.solve1
 table _ _ = error "bad input: day and part"
