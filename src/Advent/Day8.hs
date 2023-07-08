@@ -1,4 +1,4 @@
-module Advent.Day8 (solve1) where
+module Advent.Day8 (solve1, solve2) where
 
 import Advent.Util (bshow)
 import Data.Bifunctor (bimap)
@@ -70,6 +70,32 @@ visibleLeft grid = snd . foldl' f (minBound, [])
       | grid A.! i > currentMax = (grid A.! i, i : is) -- found new tallest
       | otherwise = (currentMax, is)
 
+-- | Solution for part 2.
+--
+-- >>> solve2 "30373\n25512\n65332\n33549\n35390"
+-- "8"
+solve2 :: B.ByteString -> B.ByteString
+solve2 s = do
+  let g = parseGrid s
+  bshow . maximum . fmap (visibility g) . A.indices $ g
+
+-- | Returns the visibility of tree at the given coordinate.
+--
+-- >>> visibleTreeCount (parseGrid "30373\n25512\n65332\n33549\n35390") (3,2)
+-- 8
+visibility :: (Ord a) => Matrix a -> Coordinates -> Int
+visibility g c =
+  foldl' (*) 1
+    . fmap (visibleCount (g A.! c) . fmap (g A.!))
+    $ [coordsToLeft g c, coordsToRight g c, coordsToTop g c, coordsToBottom g c]
+
+-- | Counts the visiblity from height h with respect to given successive heights in any direction.
+visibleCount :: (Ord a) => a -> [a] -> Int
+visibleCount _ [] = 0
+visibleCount h (h' : hs)
+  | h > h' = 1 + visibleCount h hs
+  | otherwise = 1
+
 -- | Returns a list of coordinates of the matrix row-by-row.
 --
 -- >>> rows (parseGrid "0123\n2345")
@@ -95,3 +121,31 @@ cols g = fmap (col g) . A.range . bimap snd snd . A.bounds $ g
 -- | Returns a list of coordinates of column j.
 col :: Matrix a -> Int -> [Coordinates]
 col g j = (`zip` repeat j) . A.range . bimap fst fst . A.bounds $ g
+
+-- | Returns a list of coordinates from the given coordinates to the left edge of the grid.
+--
+-- >>> coordsToLeft (parseGrid "30373\n25512") (1,3)
+-- [(1,2),(1,1),(1,0)]
+coordsToLeft :: Matrix a -> Coordinates -> [Coordinates]
+coordsToLeft g (i, j) = reverse . take j . row g $ i
+
+-- | Returns a list of coordinates following the given coordinates to the right edge of the grid.
+--
+-- >>> coordsToRight (parseGrid "30373\n25512") (1,1)
+-- [(1,2),(1,3),(1,4)]
+coordsToRight :: Matrix a -> Coordinates -> [Coordinates]
+coordsToRight g (i, j) = drop (j + 1) . row g $ i
+
+-- | Returns a list of coordinates from the given coordinates to the top of the grid.
+--
+-- >>> coordsToTop (parseGrid "30\n25\n65\n33\n35") (3,1)
+-- [(2,1),(1,1),(0,1)]
+coordsToTop :: Matrix a -> Coordinates -> [Coordinates]
+coordsToTop g (i, j) = reverse . take i . col g $ j
+
+-- | Returns a list of coordinates following the given coordinates to the bottom of the grid.
+--
+-- >>> coordsToBottom (parseGrid "30\n25\n65\n33\n35") (1,1)
+-- [(2,1),(3,1),(4,1)]
+coordsToBottom :: Matrix a -> Coordinates -> [Coordinates]
+coordsToBottom g (i, j) = drop (i + 1) . col g $ j
