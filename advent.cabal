@@ -23,6 +23,7 @@ common extensions
         BangPatterns
         OverloadedStrings
         ScopedTypeVariables
+        TupleSections
 
 library
     import:           warnings, extensions
@@ -34,6 +35,7 @@ library
         Advent.Day5
         Advent.Day6
         Advent.Day7
+        Advent.Day8
         Advent.Solver
         Advent.Util
 
