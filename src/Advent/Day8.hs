@@ -48,13 +48,11 @@ visibleGrid g = A.accumArray (||) False (A.bounds g) . (`zip` repeat True) . vis
 -- one direction.
 visibleAny :: Grid -> [Coordinates]
 visibleAny g =
-  mconcat (fmap (visibleLeftOrRight g) (rows g) <> fmap (visibleLeftOrRight g) (cols g))
-
--- | Given a grid and a list of coordinates of a row/column, returns a list of coordinates
--- of trees that are visible from left/top or right/bottom side. Duplicate coordinates are
--- returned if a tree is visible from more than one direction.
-visibleLeftOrRight :: Grid -> [Coordinates] -> [Coordinates]
-visibleLeftOrRight g is = visibleLeft g is <> (visibleLeft g . reverse $ is)
+  mconcat (fmap visibleLeftOrRight (rows g) <> fmap visibleLeftOrRight (cols g))
+  where
+    -- From a list of coordinates of trees in a row/column,
+    -- returns a list of coordinates of trees visible from either left/top or right/bottom.
+    visibleLeftOrRight is = visibleLeft g is <> (visibleLeft g . reverse $ is)
 
 -- | Given a grid and a list of coordinates of a row/column, returns a list of coordinates
 -- of trees that are visible from left/top direction.
