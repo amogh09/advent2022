@@ -2,7 +2,7 @@
 Solutions to [Advent of code 2022](https://adventofcode.com/2022) in Haskell. How beautiful!
 
 ## Building
-This project uses [cabal-install](https://cabal.readthedocs.io/en/3.4/getting-started.html) for builds and dependency management. To build the package run `cabal build`. I have used GHC version 9.2.7 and cabal-install version 3.10.1.0 for this project. A `shell.nix` file is provided to create a local development environment. If you have [nix](https://nixos.org/) installed, you may run `nix-shell` to enter a development environment for this project. 
+This project uses [cabal](https://cabal.readthedocs.io/en/3.4/getting-started.html) for builds and dependency management. To build the package run `cabal build`. I have used GHC version 9.2.7 and cabal-install version 3.10.1.0 for this project. A `shell.nix` file is provided to create a local development environment. If you have [nix](https://nixos.org/) installed, you may run `nix-shell` to enter a development environment for this project. 
 
 ```
 $ nix-shell
