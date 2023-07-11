@@ -1,4 +1,5 @@
 import Advent.Solver (solve)
+import qualified Data.ByteString.Lazy.Char8 as B
 import Test.Tasty
 import Test.Tasty.HUnit
 
@@ -44,5 +45,26 @@ tests =
     testCase "Day 9 Part 2 example" $ solve "day9" "part2" "example" >>= (@?= "1"),
     testCase "Day 9 Part 2 real" $ solve "day9" "part2" "real" >>= (@?= "2724"),
     testCase "Day 10 Part 1 example" $ solve "day10" "part1" "example" >>= (@?= "13140"),
-    testCase "Day 10 Part 1 real" $ solve "day10" "part1" "real" >>= (@?= "14820")
+    testCase "Day 10 Part 1 real" $ solve "day10" "part1" "real" >>= (@?= "14820"),
+    testCase "Day 10 Part 2 example" $ solve "day10" "part2" "example" >>= (@?= day10Part2ExResult),
+    testCase "Day 10 Part 2 real" $ solve "day10" "part2" "real" >>= (@?= day10Part2Result)
   ]
+  where
+    day10Part2ExResult =
+      B.unlines
+        [ "##..##..##..##..##..##..##..##..##..##..",
+          "###...###...###...###...###...###...###.",
+          "####....####....####....####....####....",
+          "#####.....#####.....#####.....#####.....",
+          "######......######......######......####",
+          "#######.......#######.......#######....."
+        ]
+    day10Part2Result =
+      B.unlines
+        [ "###..####.####.#..#.####.####.#..#..##..",
+          "#..#....#.#....#.#..#....#....#..#.#..#.",
+          "#..#...#..###..##...###..###..####.#..#.",
+          "###...#...#....#.#..#....#....#..#.####.",
+          "#.#..#....#....#.#..#....#....#..#.#..#.",
+          "#..#.####.####.#..#.####.#....#..#.#..#."
+        ]
