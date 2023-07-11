@@ -38,5 +38,9 @@ tests =
     testCase "Day 8 Part 1 example" $ solve "day8" "part1" "example" >>= (@?= "21"),
     testCase "Day 8 Part 1 real" $ solve "day8" "part1" "real" >>= (@?= "1843"),
     testCase "Day 8 Part 2 example" $ solve "day8" "part2" "example" >>= (@?= "8"),
-    testCase "Day 8 Part 2 real" $ solve "day8" "part2" "real" >>= (@?= "180000")
+    testCase "Day 8 Part 2 real" $ solve "day8" "part2" "real" >>= (@?= "180000"),
+    testCase "Day 9 Part 1 example" $ solve "day9" "part1" "example" >>= (@?= "13"),
+    testCase "Day 9 Part 1 real" $ solve "day9" "part1" "real" >>= (@?= "6503"),
+    testCase "Day 9 Part 2 example" $ solve "day9" "part2" "example" >>= (@?= "1"),
+    testCase "Day 9 Part 2 real" $ solve "day9" "part2" "real" >>= (@?= "2724")
   ]
