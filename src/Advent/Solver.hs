@@ -1,6 +1,7 @@
 module Advent.Solver (solve) where
 
 import qualified Advent.Day1 as Day1
+import qualified Advent.Day10 as Day10
 import qualified Advent.Day2 as Day2
 import qualified Advent.Day3 as Day3
 import qualified Advent.Day4 as Day4
@@ -39,4 +40,5 @@ table "day8" "part1" = Day8.solve1
 table "day8" "part2" = Day8.solve2
 table "day9" "part1" = Day9.solve1
 table "day9" "part2" = Day9.solve2
+table "day10" "part1" = Day10.solve1
 table _ _ = error "bad input: day and part"

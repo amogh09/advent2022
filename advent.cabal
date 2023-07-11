@@ -37,6 +37,7 @@ library
         Advent.Day7
         Advent.Day8
         Advent.Day9
+        Advent.Day10
         Advent.Solver
         Advent.Util
 

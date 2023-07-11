@@ -1,4 +1,13 @@
-module Advent.Util (splitAtEmptyLines, readInt, maybeHead, bshow, readInteger, compareMaybe) where
+module Advent.Util
+  ( splitAtEmptyLines,
+    readInt,
+    maybeHead,
+    bshow,
+    readInteger,
+    compareMaybe,
+    third,
+  )
+where
 
 import Data.ByteString.Lazy.Char8 (ByteString)
 import qualified Data.ByteString.Lazy.Char8 as B
@@ -30,3 +39,6 @@ compareMaybe :: Ord a => Maybe a -> Maybe a -> Ordering
 compareMaybe Nothing _ = GT
 compareMaybe _ Nothing = LT
 compareMaybe (Just x) (Just y) = compare x y
+
+third :: (a, b, c) -> c
+third (_, _, z) = z
