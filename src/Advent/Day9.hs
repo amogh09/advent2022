@@ -45,10 +45,10 @@ parseDirection s =
 
 moveDir :: Rope -> Direction -> Rope
 moveDir r d =
-  let h' = movePosition (head r) d
-      r' = h' : fmap (uncurry tailPos) (zip r' (tail r))
+  let r' = movePosition (head r) d : fmap (uncurry tailPos) (zip r' (tail r))
    in r'
 
+-- | From new head and current tail position, returns the new tail position.
 tailPos :: Position -> Position -> Position
 tailPos h@(hx, hy) t@(tx, ty)
   | dist t h <= 1 = t
