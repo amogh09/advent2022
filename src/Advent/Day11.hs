@@ -18,26 +18,48 @@ data Monkey = Monkey
     monkeyTest :: Test
   }
 
+{- ORMOLU_DISABLE -}
 type MonkeyId = Int
-
 type Item = Int
-
 type Operation = Item -> Item
-
 type Test = Item -> MonkeyId
+type InspectCount = Int
+{- ORMOLU_ENABLE -}
 
 solve1 :: ByteString -> ByteString
 solve1 s = do
   let ms = V.fromList $ zip (parseMonkeys s) (repeat 0)
       counts =
         fmap snd
-          . sortOn (Ord.Down . snd)
+          . sortOn (Ord.Down . snd) -- sort by number of inspections
           . V.toList
-          . foldr (\_ ms' -> monkeyRound ms') ms
-          $ replicate 20 'a'
+          . foldl' (\ms' _ -> monkeyRound ms') ms
+          $ replicate 20 () -- do 20 rounds
   case counts of
     (i1 : i2 : _) -> bshow $ i1 * i2
     _ -> error "expected at least two monkeys in the input"
+
+-- | Performs one round of monkeys throwing items at each other
+monkeyRound :: Vector (Monkey, InspectCount) -> Vector (Monkey, InspectCount)
+monkeyRound ms = foldl' f ms [0 .. V.length ms - 1]
+  where
+    f ms' i = V.modify (turn i) ms' -- perform turn for Monkey i
+    turn i ms' = do
+      (m, count) <- MV.read ms' i -- find monkey at index i
+      -- find target monkey for each item with new worry level
+      let targets = fmap (targetMonkey m) m.monkeyItems
+      -- add items to target monkeys
+      mapM_ (\(tid, item) -> MV.modify ms' (`addItem` item) tid) targets
+      -- update current monkey's items list to empty
+      MV.write ms' i (m {monkeyItems = Seq.empty}, count + length (m.monkeyItems))
+
+    targetMonkey :: Monkey -> Item -> (MonkeyId, Item)
+    targetMonkey m item = do
+      let item' = m.monkeyOp item `div` 3
+      (m.monkeyTest item', item')
+
+    addItem :: (Monkey, InspectCount) -> Item -> (Monkey, InspectCount)
+    addItem (m, c) i = (m {monkeyItems = m.monkeyItems |> i}, c)
 
 parseMonkeys :: ByteString -> [Monkey]
 parseMonkeys = fmap parseMonkey . splitAtEmptyLines
@@ -47,11 +69,8 @@ parseMonkey (_ : sitems : sop : stest) = do
   let items = case B.words sitems of
         "Starting" : "items:" : is -> Seq.fromList $ fmap readInt is
         _ -> error $ "failed to parse monkey items from: " <> B.unpack sitems
-      op = parseOperation sop
-      test = parseTest stest
-  Monkey items op test
+  Monkey items (parseOperation sop) (parseTest stest)
   where
-    parseOperation :: ByteString -> Operation
     parseOperation s = case B.words s of
       ["Operation:", "new", "=", x, op, y] -> case op of
         "*" -> \old -> oldOrConst old x * oldOrConst old y
@@ -59,40 +78,17 @@ parseMonkey (_ : sitems : sop : stest) = do
         _ -> error $ "failed to parse operator: " <> B.unpack op
       _ -> error $ "failed to parse operation: " <> B.unpack s
 
-    oldOrConst :: Int -> ByteString -> Int
     oldOrConst old "old" = old
     oldOrConst _ x = readInt x
 
-    parseTest :: [ByteString] -> Test
     parseTest [s1, s2, s3] = case (B.words s1, B.words s2, B.words s3) of
       ( ["Test:", "divisible", "by", x],
         ["If", "true:", "throw", "to", "monkey", y],
         ["If", "false:", "throw", "to", "monkey", z]
         ) -> \item -> if item `mod` readInt x == 0 then readInt y else readInt z
       _ -> error $ "failed to parse test: " <> B.unpack (B.unlines [s1, s2, s3])
-    parseTest s =
-      error $ "failed to parse test, unexpected line count: " <> B.unpack (B.unlines s)
+    parseTest s = error $ "failed to parse test: " <> B.unpack (B.unlines s)
 parseMonkey s = error $ "invalid input: " <> B.unpack (B.unlines s)
-
-monkeyRound :: Vector (Monkey, Int) -> Vector (Monkey, Int)
-monkeyRound ms = foldl' f ms [0 .. V.length ms - 1]
-  where
-    f acc i = V.modify (turn i) acc
-
-    turn i acc = do
-      (m, count) <- MV.read acc i
-      let targets = fmap (targetMonkey m) m.monkeyItems
-      mapM_ (\(tid, item) -> MV.modify acc (`addItem` item) tid) targets
-      MV.write acc i (m {monkeyItems = Seq.empty}, count + length (m.monkeyItems))
-
-    targetMonkey :: Monkey -> Item -> (MonkeyId, Item)
-    targetMonkey m item = do
-      let item' = m.monkeyOp item `div` 3
-          m' = m.monkeyTest item'
-      (m', item')
-
-    addItem :: (Monkey, Int) -> Item -> (Monkey, Int)
-    addItem (m, c) i = (m {monkeyItems = m.monkeyItems |> i}, c)
 
 readInt :: ByteString -> Int
 readInt s = case B.readInt s of
