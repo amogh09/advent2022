@@ -23,6 +23,7 @@ common extensions
         BangPatterns
         OverloadedStrings
         ScopedTypeVariables
+        OverloadedRecordDot
         TupleSections
 
 library
@@ -30,6 +31,7 @@ library
     exposed-modules:
         Advent.Day1
         Advent.Day10
+        Advent.Day11
         Advent.Day2
         Advent.Day3
         Advent.Day4
