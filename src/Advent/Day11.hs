@@ -1,4 +1,4 @@
-module Advent.Day11 (solve1) where
+module Advent.Day11 (solve1, solve2) where
 
 import Advent.Util (bshow, splitAtEmptyLines)
 import Data.ByteString.Lazy.Char8 (ByteString)
@@ -15,7 +15,8 @@ import qualified Data.Vector.Mutable as MV
 data Monkey = Monkey
   { monkeyItems :: Seq Item,
     monkeyOp :: Operation,
-    monkeyTest :: Test
+    monkeyTest :: Test,
+    monkeyDivisor :: Int
   }
 
 {- ORMOLU_DISABLE -}
@@ -24,28 +25,39 @@ type Item = Int
 type Operation = Item -> Item
 type Test = Item -> MonkeyId
 type InspectCount = Int
+type Reduce = Int -> Int -- function to reduce worry
+type Rounds = Int
 {- ORMOLU_ENABLE -}
 
 solve1 :: ByteString -> ByteString
-solve1 s = do
-  let ms = V.fromList $ zip (parseMonkeys s) (repeat 0)
+solve1 = solve (const (`div` 3)) 20
+
+solve2 :: ByteString -> ByteString
+solve2 = solve (flip mod . product . fmap monkeyDivisor) 10000
+
+solve :: ([Monkey] -> Reduce) -> Rounds -> ByteString -> ByteString
+solve toReducer rounds s = do
+  let monkeys = parseMonkeys s
+      reduce = toReducer monkeys
+      ms = V.fromList $ zip monkeys (repeat 0)
       counts =
         fmap snd
           . sortOn (Ord.Down . snd) -- sort by number of inspections
           . V.toList
-          . foldl' (\ms' _ -> monkeyRound ms') ms
-          $ replicate 20 () -- do 20 rounds
+          . foldl' (\ms' _ -> monkeyRound reduce ms') ms
+          $ replicate rounds ()
   case counts of
     (i1 : i2 : _) -> bshow $ i1 * i2
     _ -> error "expected at least two monkeys in the input"
 
 -- | Performs one round of monkeys throwing items at each other
-monkeyRound :: Vector (Monkey, InspectCount) -> Vector (Monkey, InspectCount)
-monkeyRound ms = foldl' f ms [0 .. V.length ms - 1]
+monkeyRound :: Reduce -> Vector (Monkey, InspectCount) -> Vector (Monkey, InspectCount)
+monkeyRound reduce ms = foldl' f ms [0 .. V.length ms - 1]
   where
+    f :: Vector (Monkey, InspectCount) -> Int -> Vector (Monkey, InspectCount)
     f ms' i = V.modify (turn i) ms' -- perform turn for Monkey i
     turn i ms' = do
-      (m, count) <- MV.read ms' i -- find monkey at index i
+      (m :: Monkey, count :: InspectCount) <- MV.read ms' i -- find monkey at index i
       -- find target monkey for each item with new worry level
       let targets = fmap (targetMonkey m) m.monkeyItems
       -- add items to target monkeys
@@ -55,7 +67,7 @@ monkeyRound ms = foldl' f ms [0 .. V.length ms - 1]
 
     targetMonkey :: Monkey -> Item -> (MonkeyId, Item)
     targetMonkey m item = do
-      let item' = m.monkeyOp item `div` 3
+      let item' = reduce . m.monkeyOp $ item
       (m.monkeyTest item', item')
 
     addItem :: (Monkey, InspectCount) -> Item -> (Monkey, InspectCount)
@@ -69,7 +81,8 @@ parseMonkey (_ : sitems : sop : stest) = do
   let items = case B.words sitems of
         "Starting" : "items:" : is -> Seq.fromList $ fmap readInt is
         _ -> error $ "failed to parse monkey items from: " <> B.unpack sitems
-  Monkey items (parseOperation sop) (parseTest stest)
+      (test, d) = parseTest stest
+  Monkey items (parseOperation sop) test d
   where
     parseOperation s = case B.words s of
       ["Operation:", "new", "=", x, op, y] -> case op of
@@ -81,11 +94,14 @@ parseMonkey (_ : sitems : sop : stest) = do
     oldOrConst old "old" = old
     oldOrConst _ x = readInt x
 
+    parseTest :: [ByteString] -> (Test, Int)
     parseTest [s1, s2, s3] = case (B.words s1, B.words s2, B.words s3) of
       ( ["Test:", "divisible", "by", x],
         ["If", "true:", "throw", "to", "monkey", y],
         ["If", "false:", "throw", "to", "monkey", z]
-        ) -> \item -> if item `mod` readInt x == 0 then readInt y else readInt z
+        ) -> do
+          let d = readInt x
+          (\item -> if item `mod` d == 0 then readInt y else readInt z, d)
       _ -> error $ "failed to parse test: " <> B.unpack (B.unlines [s1, s2, s3])
     parseTest s = error $ "failed to parse test: " <> B.unpack (B.unlines s)
 parseMonkey s = error $ "invalid input: " <> B.unpack (B.unlines s)
