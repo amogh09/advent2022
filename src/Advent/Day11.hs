@@ -44,8 +44,9 @@ solve toReducer rounds s = do
         fmap snd
           . sortOn (Ord.Down . snd) -- sort by number of inspections
           . V.toList
-          . foldl' (\ms' _ -> monkeyRound reduce ms') ms
-          $ replicate rounds ()
+          . (!! rounds)
+          . iterate (monkeyRound reduce)
+          $ ms
   case counts of
     (i1 : i2 : _) -> bshow $ i1 * i2
     _ -> error "expected at least two monkeys in the input"
