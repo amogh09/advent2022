@@ -40,15 +40,14 @@ solve2 = solve (flip mod . product . fmap monkeyDivisor) 10000
 solve :: ([Monkey] -> Reduce) -> Rounds -> ByteString -> ByteString
 solve toReducer rounds s = do
   let monkeys = parseMonkeys s
-      reduce = toReducer monkeys
-      ms = V.fromList $ zip monkeys (repeat 0)
       counts =
         sortOn Ord.Down
           . fmap snd
           . V.toList
           . (!! rounds)
-          . iterate (monkeyRound reduce)
-          $ ms
+          . iterate (monkeyRound $ toReducer monkeys)
+          . V.fromList
+          $ zip monkeys (repeat 0)
   case counts of
     (i1 : i2 : _) -> bshow $ i1 * i2
     _ -> error "expected at least two monkeys in the input"
