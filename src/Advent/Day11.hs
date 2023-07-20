@@ -1,12 +1,14 @@
 module Advent.Day11 (solve1, solve2) where
 
 import Advent.Util (bshow, splitAtEmptyLines)
+import Data.Bifunctor (first)
 import Data.ByteString.Lazy.Char8 (ByteString)
 import qualified Data.ByteString.Lazy.Char8 as B
 import Data.List (foldl', sortOn)
 import qualified Data.Ord as Ord
 import Data.Sequence (Seq, (|>))
 import qualified Data.Sequence as Seq
+import Data.Tuple.Extra (dupe)
 import Data.Vector (Vector)
 import qualified Data.Vector as V
 import qualified Data.Vector.Mutable as MV
@@ -41,8 +43,8 @@ solve toReducer rounds s = do
       reduce = toReducer monkeys
       ms = V.fromList $ zip monkeys (repeat 0)
       counts =
-        fmap snd
-          . sortOn (Ord.Down . snd) -- sort by number of inspections
+        sortOn Ord.Down
+          . fmap snd
           . V.toList
           . (!! rounds)
           . iterate (monkeyRound reduce)
@@ -60,16 +62,11 @@ monkeyRound reduce ms = foldl' f ms [0 .. V.length ms - 1]
     turn i ms' = do
       (m :: Monkey, count :: InspectCount) <- MV.read ms' i -- find monkey at index i
       -- find target monkey for each item with new worry level
-      let targets = fmap (targetMonkey m) m.monkeyItems
+      let targets = fmap (first m.monkeyTest . dupe . reduce . m.monkeyOp) $ m.monkeyItems
       -- add items to target monkeys
       mapM_ (\(tid, item) -> MV.modify ms' (`addItem` item) tid) targets
       -- update current monkey's items list to empty
       MV.write ms' i (m {monkeyItems = Seq.empty}, count + length (m.monkeyItems))
-
-    targetMonkey :: Monkey -> Item -> (MonkeyId, Item)
-    targetMonkey m item = do
-      let item' = reduce . m.monkeyOp $ item
-      (m.monkeyTest item', item')
 
     addItem :: (Monkey, InspectCount) -> Item -> (Monkey, InspectCount)
     addItem (m, c) i = (m {monkeyItems = m.monkeyItems |> i}, c)
