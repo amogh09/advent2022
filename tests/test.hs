@@ -53,7 +53,9 @@ tests =
     tc "day11" "part2" "example" "2713310158",
     tc "day11" "part2" "real" "19754471646",
     tc "day12" "part1" "example" "31",
-    tc "day12" "part1" "real" "423"
+    tc "day12" "part1" "real" "423",
+    tc "day12" "part2" "example" "29",
+    tc "day12" "part2" "real" "416"
   ]
   where
     day10Part2ExampleResult =

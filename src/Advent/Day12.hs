@@ -1,4 +1,4 @@
-module Advent.Day12 (solve1) where
+module Advent.Day12 (solve1, solve2) where
 
 import Advent.Util (bshow)
 import Data.Array (Array)
@@ -7,7 +7,7 @@ import Data.ByteString.Lazy.Char8 (ByteString)
 import qualified Data.ByteString.Lazy.Char8 as B
 import Data.Char (ord)
 import Data.List (findIndex)
-import Data.Maybe (fromMaybe)
+import Data.Maybe (fromMaybe, mapMaybe)
 import Data.Set (Set)
 import qualified Data.Set as Set
 
@@ -21,7 +21,17 @@ type Visited = Set Coordinates
 solve1 :: ByteString -> ByteString
 solve1 s = do
   let (hm, start, end) = parseHeightMap s
-  bshow . fromMaybe 0 . findIndex (elem end) . layers start $ hm
+  bshow . fromMaybe 0 $ shortest hm end start
+
+solve2 :: ByteString -> ByteString
+solve2 s = do
+  let (hm, _, end) = parseHeightMap s
+      starts = fmap fst . filter ((== 'a') . snd) . A.assocs $ hm
+  bshow . minimum . mapMaybe (shortest hm end) $ starts
+
+shortest :: HeightMap -> Coordinates -> Coordinates -> Maybe Int
+shortest hm end start =
+  findIndex (elem end) . takeWhile (not . null) . layers start $ hm
 
 layers :: Coordinates -> HeightMap -> [Layer]
 layers start hm = fmap fst . iterate nextLayer $ ([start], Set.singleton start)
