@@ -7,7 +7,7 @@ import Data.ByteString.Lazy.Char8 (ByteString)
 import qualified Data.ByteString.Lazy.Char8 as B
 import Data.Char (ord)
 import Data.List (findIndex)
-import Data.Maybe (fromMaybe, mapMaybe)
+import Data.Maybe (fromMaybe)
 import Data.Set (Set)
 import qualified Data.Set as Set
 
@@ -21,20 +21,33 @@ type Visited = Set Coordinates
 solve1 :: ByteString -> ByteString
 solve1 s = do
   let (hm, start, end) = parseHeightMap s
-  bshow . fromMaybe 0 $ shortest hm end start
+      smallToLarge c c' = ord (hm A.! c') < ord (hm A.! c)
+  bshow
+    . fromMaybe 0
+    . shortest smallToLarge (elem end) start
+    $ hm
 
 solve2 :: ByteString -> ByteString
 solve2 s = do
   let (hm, _, end) = parseHeightMap s
-      starts = fmap fst . filter ((== 'a') . snd) . A.assocs $ hm
-  bshow . minimum . mapMaybe (shortest hm end) $ starts
+      largeToSmall c c' = ord (hm A.! c) < ord (hm A.! c')
+  bshow
+    . fromMaybe 0
+    . shortest largeToSmall (any ((== 'a') . (hm A.!))) end
+    $ hm
 
-shortest :: HeightMap -> Coordinates -> Coordinates -> Maybe Int
-shortest hm end start =
-  findIndex (elem end) . takeWhile (not . null) . layers start $ hm
+shortest ::
+  (Coordinates -> Coordinates -> Bool) ->
+  (Layer -> Bool) ->
+  Coordinates ->
+  HeightMap ->
+  Maybe Int
+shortest hasAccessTo hasDestination start =
+  findIndex hasDestination . takeWhile (not . null) . layers hasAccessTo start
 
-layers :: Coordinates -> HeightMap -> [Layer]
-layers start hm = fmap fst . iterate nextLayer $ ([start], Set.singleton start)
+layers :: (Coordinates -> Coordinates -> Bool) -> Coordinates -> HeightMap -> [Layer]
+layers hasAccessTo start hm =
+  fmap fst . iterate nextLayer $ ([start], Set.singleton start)
   where
     nextLayer :: (Layer, Visited) -> (Layer, Visited)
     nextLayer (cs, visited) = do
@@ -48,9 +61,6 @@ layers start hm = fmap fst . iterate nextLayer $ ([start], Set.singleton start)
           A.inRange (A.bounds hm) c',
           c `hasAccessTo` c'
       ]
-
-    hasAccessTo :: Coordinates -> Coordinates -> Bool
-    hasAccessTo c c' = ord (hm A.! c') - ord (hm A.! c) <= 1
 
 parseHeightMap :: ByteString -> (HeightMap, Coordinates, Coordinates)
 parseHeightMap str = do
