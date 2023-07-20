@@ -6,4 +6,7 @@ pkgs.mkShell {
       [ cabal-install haskell-language-server ormolu cabal-fmt eventlog2html ])
     )
   ];
+  shellHook = ''
+    export PATH=$PATH:~/.cabal/bin"
+  '';
 }
