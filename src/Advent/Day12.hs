@@ -21,7 +21,7 @@ type Visited = Set Coordinates
 solve1 :: ByteString -> ByteString
 solve1 s = do
   let (hm, start, end) = parseHeightMap s
-      smallToLarge c c' = ord (hm A.! c') < ord (hm A.! c)
+      smallToLarge c c' = ord (hm A.! c') - ord (hm A.! c) <= 1
   bshow
     . fromMaybe 0
     . shortest smallToLarge (elem end) start
@@ -30,7 +30,7 @@ solve1 s = do
 solve2 :: ByteString -> ByteString
 solve2 s = do
   let (hm, _, end) = parseHeightMap s
-      largeToSmall c c' = ord (hm A.! c) < ord (hm A.! c')
+      largeToSmall c c' = ord (hm A.! c) - ord (hm A.! c') <= 1
   bshow
     . fromMaybe 0
     . shortest largeToSmall (any ((== 'a') . (hm A.!))) end
