@@ -63,7 +63,7 @@ parsePacket = elemPacket . head . f []
       | B.head s == ']' =
           case break isOpen xs of
             (ls, _ : rs) ->
-              f (StackPacket (PList . reverse $ (elemPacket <$> ls)) : rs) (B.tail s)
+              f (StackPacket (PList . reverse . fmap elemPacket $ ls) : rs) (B.tail s)
             _ -> error "invalid input: mistmatching parens"
       | otherwise = case B.readInt s of
           Just (x, rest) -> f (StackPacket (PInt x) : xs) rest
