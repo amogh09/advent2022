@@ -1,8 +1,10 @@
-module Advent.Day13 (solve1) where
+module Advent.Day13 (solve1, solve2) where
 
 import Advent.Util (bshow, splitAtEmptyLines)
 import Data.ByteString.Lazy.Char8 (ByteString)
 import qualified Data.ByteString.Lazy.Char8 as B
+import Data.List (elemIndex, sort)
+import Data.Maybe (fromMaybe)
 
 solve1 :: ByteString -> ByteString
 solve1 =
@@ -12,6 +14,14 @@ solve1 =
     . filter ((== LT) . uncurry compare . snd)
     . zip [1 :: Int, 2 ..]
     . parsePairs
+
+solve2 :: ByteString -> ByteString
+solve2 s = do
+  let p2 = PList [PList [PInt 2]]
+      p6 = PList [PList [PInt 6]]
+      sorted = sort . (++ [p2, p6]) . fmap parsePacket . filter (not . B.null) . B.lines $ s
+      idx p = (+ 1) <$> elemIndex p sorted
+  bshow . fromMaybe 0 $ (*) <$> idx p2 <*> idx p6
 
 type Pair = (Packet, Packet)
 
