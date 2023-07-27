@@ -8,7 +8,6 @@ import Data.List (foldl')
 import Data.Map (Map)
 import qualified Data.Map as M
 import Data.Maybe (mapMaybe)
-import Debug.Trace (traceShow)
 
 {- ORMOLU_DISABLE -}
 type Coordinates = (Int, Int)
@@ -29,13 +28,8 @@ emptyBarriers = Barriers M.empty M.empty
 intersection :: VerticalLine -> HorizBarrier -> Maybe Coordinates
 intersection (VerticalLine (x, y)) (HorizBarrier y' (x1, x2))
   | y > y' = Nothing
-  | x >= min x1 x2 && x <= max x1 x2 = traceShow ("horizCollision", (x, y), (y', (x1, x2))) $ Just (x, y')
+  | x >= min x1 x2 && x <= max x1 x2 = Just (x, y')
   | otherwise = Nothing
-
--- intersection (VerticalLine (x, y)) (VertBarrier x' (y1, y2))
---   | y > max y1 y2 = Nothing
---   | x /= x' = Nothing
---   | otherwise = traceShow ("vertCollision", (x, y), (x', (y1, y2))) $ Just (x, y)
 
 -- | Whether the given coordinates lie on the barrier.
 liesOnHoriz :: Coordinates -> HorizBarrier -> Bool
@@ -51,16 +45,16 @@ liesOnVert (x, y) (VertBarrier x' (y1, y2))
 -- | Given a list of barriers, find the final resting point of sand particle.
 --   Returns Nothing if the particle lies on a barrier or interacts with no barriers.
 restPoint :: Particle -> Barriers -> Maybe Coordinates
-restPoint (Particle p@(px, py)) bsm = traceShow ("min", (px, py)) $ do
+restPoint (Particle p@(px, py)) bsm = do
   case M.lookupGT py (barriersHoriz bsm) of
     Nothing -> Nothing
-    Just (k, bs) -> traceShow ("checking horiz level", k) $ do
+    Just (k, bs) -> do
       case fmap (second pred) . mapMaybe (intersection $ VerticalLine p) $ bs of
-        [] -> traceShow ("fallingThrough", k) $ restPoint (Particle (px, k)) bsm
-        (x, y) : _ -> traceShow ("hitGround", (x, y)) $ case (isBlocked (x - 1, y + 1) bsm, isBlocked (x + 1, y + 1) bsm) of
-          (True, True) -> traceShow ("found", (x, y)) $ Just (x, y)
-          (True, False) -> traceShow ("rightOpen") $ restPoint (Particle (x + 1, y + 1)) bsm
-          (False, _) -> traceShow ("leftOpen") $ restPoint (Particle (x - 1, y + 1)) bsm
+        [] -> restPoint (Particle (px, k)) bsm
+        (x, y) : _ -> case (isBlocked (x - 1, y + 1) bsm, isBlocked (x + 1, y + 1) bsm) of
+          (True, True) -> Just (x, y)
+          (True, False) -> restPoint (Particle (x + 1, y + 1)) bsm
+          (False, _) -> restPoint (Particle (x - 1, y + 1)) bsm
 
 isBlocked :: Coordinates -> Barriers -> Bool
 isBlocked c bs = isBlockedHoriz c bs || isBlockedVert c bs
