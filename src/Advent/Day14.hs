@@ -14,7 +14,6 @@ type Coordinates = (Int, Int)
 data HorizBarrier = HorizBarrier Int (Int, Int)
 data VertBarrier = VertBarrier Int (Int, Int)
 newtype VerticalLine = VerticalLine Coordinates
-newtype Particle = Particle Coordinates
 data Barriers = Barriers {
       barriersHoriz :: Map Int [HorizBarrier],
       barriersVert :: Map Int [VertBarrier]
@@ -24,19 +23,20 @@ data Barriers = Barriers {
 emptyBarriers :: Barriers
 emptyBarriers = Barriers M.empty M.empty
 
--- | Intersection of a vertical line with a barrier.
+-- | Intersection of a vertical line with a horizontal barrier.
 intersection :: VerticalLine -> HorizBarrier -> Maybe Coordinates
 intersection (VerticalLine (x, y)) (HorizBarrier y' (x1, x2))
   | y > y' = Nothing
   | x >= min x1 x2 && x <= max x1 x2 = Just (x, y')
   | otherwise = Nothing
 
--- | Whether the given coordinates lie on the barrier.
+-- | Whether the given coordinates lie on the horizontal barrier.
 liesOnHoriz :: Coordinates -> HorizBarrier -> Bool
 liesOnHoriz (x, y) (HorizBarrier y' (x1, x2))
   | y /= y' = False
   | otherwise = x >= min x1 x2 && x <= max x1 x2
 
+-- | Whether the given coordinates lie on the vertical barrier.
 liesOnVert :: Coordinates -> VertBarrier -> Bool
 liesOnVert (x, y) (VertBarrier x' (y1, y2))
   | x /= x' = False
@@ -44,26 +44,22 @@ liesOnVert (x, y) (VertBarrier x' (y1, y2))
 
 -- | Given a list of barriers, find the final resting point of sand particle.
 --   Returns Nothing if the particle lies on a barrier or interacts with no barriers.
-restPoint :: Particle -> Barriers -> Maybe Coordinates
-restPoint (Particle p@(px, py)) bsm = do
-  case M.lookupGT py (barriersHoriz bsm) of
-    Nothing -> Nothing
-    Just (k, bs) -> do
+restPoint :: Coordinates -> Barriers -> Maybe Coordinates
+restPoint p@(px, py) bsm = M.lookupGT py (barriersHoriz bsm) >>= checkLevel
+  where
+    checkLevel (k, bs) =
       case fmap (second pred) . mapMaybe (intersection $ VerticalLine p) $ bs of
-        [] -> restPoint (Particle (px, k)) bsm
+        [] -> restPoint (px, k) bsm
         (x, y) : _ -> case (isBlocked (x - 1, y + 1) bsm, isBlocked (x + 1, y + 1) bsm) of
-          (True, True) -> Just (x, y)
-          (True, False) -> restPoint (Particle (x + 1, y + 1)) bsm
-          (False, _) -> restPoint (Particle (x - 1, y + 1)) bsm
+          (False, _) -> restPoint (x - 1, y + 1) bsm
+          (_, False) -> restPoint (x + 1, y + 1) bsm
+          _ -> Just (x, y)
 
 isBlocked :: Coordinates -> Barriers -> Bool
-isBlocked c bs = isBlockedHoriz c bs || isBlockedVert c bs
-
-isBlockedHoriz :: Coordinates -> Barriers -> Bool
-isBlockedHoriz (x, y) = maybe False (any ((x, y) `liesOnHoriz`)) . M.lookup y . barriersHoriz
-
-isBlockedVert :: Coordinates -> Barriers -> Bool
-isBlockedVert (x, y) = maybe False (any ((x, y) `liesOnVert`)) . M.lookup x . barriersVert
+isBlocked (x, y) bs = isBlockedHoriz || isBlockedVert
+  where
+    isBlockedHoriz = maybe False (any ((x, y) `liesOnHoriz`)) . M.lookup y . barriersHoriz $ bs
+    isBlockedVert = maybe False (any ((x, y) `liesOnVert`)) . M.lookup x . barriersVert $ bs
 
 parseRock :: ByteString -> [Either HorizBarrier VertBarrier]
 parseRock s =
@@ -85,21 +81,19 @@ parseRocks = foldl' f emptyBarriers . mconcat . fmap parseRock . B.lines
     f bsm (Right b@(VertBarrier x (y1, y2))) =
       bsm
         { barriersVert = M.insertWith (++) x [b] . barriersVert $ bsm,
-          barriersHoriz = M.insertWith (++) (min y1 y2) [HorizBarrier (min y1 y2) (x, x)] . barriersHoriz $ bsm
+          barriersHoriz =
+            let y = min y1 y2
+             in M.insertWith (++) y [HorizBarrier y (x, x)] . barriersHoriz $ bsm
         }
     f bsm (Left b@(HorizBarrier y _)) =
-      bsm
-        { barriersHoriz = M.insertWith (++) y [b] . barriersHoriz $ bsm
-        }
+      bsm {barriersHoriz = M.insertWith (++) y [b] . barriersHoriz $ bsm}
 
 simulate :: Barriers -> Barriers
-simulate bs = case restPoint (Particle (500, 0)) bs of
-  Just (x, y) ->
-    simulate $
-      bs
-        { barriersHoriz = M.insertWith (++) y [HorizBarrier y (x, x)] . barriersHoriz $ bs
-        }
-  Nothing -> bs
+simulate bs = maybe bs updateAndRepeat . restPoint (500, 0) $ bs
+  where
+    updateAndRepeat (x, y) =
+      simulate $
+        bs {barriersHoriz = M.insertWith (++) y [HorizBarrier y (x, x)] . barriersHoriz $ bs}
 
 solve1 :: ByteString -> ByteString
 solve1 s =
