@@ -6,12 +6,14 @@ module Advent.Util
     readInteger,
     compareMaybe,
     third,
+    uniq,
   )
 where
 
 import Data.ByteString.Lazy.Char8 (ByteString)
 import qualified Data.ByteString.Lazy.Char8 as B
 import Data.List.Split (splitWhen)
+import qualified Data.Set as Set
 
 splitAtEmptyLines :: ByteString -> [[ByteString]]
 splitAtEmptyLines = splitWhen B.null . B.lines
@@ -42,3 +44,6 @@ compareMaybe (Just x) (Just y) = compare x y
 
 third :: (a, b, c) -> c
 third (_, _, z) = z
+
+uniq :: Ord a => [a] -> [a]
+uniq = Set.toList . Set.fromList

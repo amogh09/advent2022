@@ -1,4 +1,4 @@
-module Advent.Day14 (solve1) where
+module Advent.Day14 (solve1, solve2) where
 
 import Advent.Util (bshow, readInt)
 import Data.Bifunctor (bimap, second)
@@ -64,10 +64,10 @@ isBlocked (x, y) bs = isBlockedHoriz || isBlockedVert
 parseRock :: ByteString -> [Either HorizBarrier VertBarrier]
 parseRock s =
   let xs = fmap snd . filter (even . fst) . zip [0 :: Int, 1 ..] . B.words $ s
-   in (parseLineSegment <$> zip xs (tail xs))
+   in (parseBarrier <$> zip xs (tail xs))
 
-parseLineSegment :: (ByteString, ByteString) -> Either HorizBarrier VertBarrier
-parseLineSegment (s, s') = case (parseCoordinates s, parseCoordinates s') of
+parseBarrier :: (ByteString, ByteString) -> Either HorizBarrier VertBarrier
+parseBarrier (s, s') = case (parseCoordinates s, parseCoordinates s') of
   ((x1, y1), (x2, y2)) | x1 == x2 -> Right $ VertBarrier x1 (y1, y2)
   ((x1, y1), (x2, y2)) | y1 == y2 -> Left $ HorizBarrier y1 (x1, x2)
   _ -> error "invalid input: barrier is nor horizontal nor vertical"
@@ -75,32 +75,53 @@ parseLineSegment (s, s') = case (parseCoordinates s, parseCoordinates s') of
 parseCoordinates :: ByteString -> Coordinates
 parseCoordinates = bimap readInt (readInt . B.tail) . B.break (== ',')
 
-parseRocks :: ByteString -> Barriers
-parseRocks = foldl' f emptyBarriers . mconcat . fmap parseRock . B.lines
+mkBarriers :: [Either HorizBarrier VertBarrier] -> Barriers
+mkBarriers = foldl' f emptyBarriers
   where
-    f bsm (Right b@(VertBarrier x (y1, y2))) =
-      bsm
-        { barriersVert = M.insertWith (++) x [b] . barriersVert $ bsm,
-          barriersHoriz =
-            let y = min y1 y2
-             in M.insertWith (++) y [HorizBarrier y (x, x)] . barriersHoriz $ bsm
-        }
-    f bsm (Left b@(HorizBarrier y _)) =
-      bsm {barriersHoriz = M.insertWith (++) y [b] . barriersHoriz $ bsm}
+    f bsm = either (addHorizBarrier bsm) (addVertBarrier bsm)
+
+addHorizBarrier :: Barriers -> HorizBarrier -> Barriers
+addHorizBarrier bsm b@(HorizBarrier y _) =
+  bsm {barriersHoriz = M.insertWith (++) y [b] . barriersHoriz $ bsm}
+
+addVertBarrier :: Barriers -> VertBarrier -> Barriers
+addVertBarrier bsm b@(VertBarrier x (y1, y2)) =
+  bsm
+    { barriersVert = M.insertWith (++) x [b] . barriersVert $ bsm,
+      barriersHoriz =
+        let y = min y1 y2
+         in M.insertWith (++) y [HorizBarrier y (x, x)] . barriersHoriz $ bsm
+    }
 
 simulate :: Barriers -> Barriers
 simulate bs = maybe bs updateAndRepeat . restPoint (500, 0) $ bs
   where
+    updateAndRepeat (500, 0) = bs
     updateAndRepeat (x, y) =
       simulate $
         bs {barriersHoriz = M.insertWith (++) y [HorizBarrier y (x, x)] . barriersHoriz $ bs}
 
+listMapLength :: Map k [v] -> Int
+listMapLength = length . mconcat . M.elems
+
 solve1 :: ByteString -> ByteString
 solve1 s =
-  let rocks = parseRocks s
+  let rocks = mkBarriers . mconcat . fmap parseRock . B.lines $ s
       after = simulate rocks
-      size bs = sz (barriersHoriz bs) + sz (barriersVert bs)
+      size bs = listMapLength (barriersHoriz bs) + listMapLength (barriersVert bs)
    in bshow $ size after - size rocks
+
+solve2 :: ByteString -> ByteString
+solve2 s =
+  let rocks = mconcat . fmap parseRock . B.lines $ s
+      lowestPoint = maximum . fmap (either hbLowestPoint vbLowestPoint) $ rocks
+      barriers =
+        mkBarriers
+          . (Left (HorizBarrier (2 + lowestPoint) (minBound, maxBound)) :)
+          $ rocks
+      after = simulate barriers
+      size bs = listMapLength (barriersHoriz bs) + listMapLength (barriersVert bs)
+   in bshow $ size after - size barriers + 1
   where
-    sz :: Map k [v] -> Int
-    sz = length . mconcat . M.elems
+    hbLowestPoint (HorizBarrier y _) = y
+    vbLowestPoint (VertBarrier _ (y1, y2)) = min y1 y2
