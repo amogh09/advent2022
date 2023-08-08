@@ -1,8 +1,6 @@
-module Advent.Day15 (solve1) where
+module Advent.Day15 (solve1, solve2) where
 
 import Advent.Util (bshow, uniq)
-import Control.Applicative ((<|>))
-import Data.Bifunctor (bimap)
 import Data.ByteString.Lazy.Char8 (ByteString)
 import qualified Data.ByteString.Lazy.Char8 as B
 import Data.List (foldl', sortOn)
@@ -10,22 +8,11 @@ import Data.Maybe (mapMaybe)
 
 {- ORMOLU_DISABLE -}
 type Coordinates = (Int, Int)
-type Parallelogram = (LineSegment, LineSegment, LineSegment, LineSegment)
-type LineSegment = (Coordinates, Coordinates)
 type Interval = (Int, Int)
+type SourceBeacon = (Coordinates, Coordinates)
 {- ORMOLU_ENABLE -}
 
-sbParalellogram :: Coordinates -> Coordinates -> Parallelogram
-sbParalellogram (sx, sy) (bx, by) =
-  ( ((sx - d, sy), (sx, sy + d)),
-    ((sx + d, sy), (sx, sy + d)),
-    ((sx - d, sy), (sx, sy - d)),
-    ((sx + d, sy), (sx, sy - d))
-  )
-  where
-    d = abs (sx - bx) + abs (sy - by)
-
-parseSourceBeacon :: ByteString -> (Coordinates, Coordinates)
+parseSourceBeacon :: ByteString -> SourceBeacon
 parseSourceBeacon s = do
   let ws = B.words s
   ( (parseCoord $ ws !! 2, parseCoord $ ws !! 3),
@@ -36,25 +23,6 @@ parseSourceBeacon s = do
     readInt x = case B.readInt x of
       Just (v, _) -> v
       Nothing -> error "invalid input"
-
--- | Intersection between a horizontal line and a parallelogram.
-hlineParIntersect :: Int -> Parallelogram -> Maybe LineSegment
-hlineParIntersect y (a, b, c, d) =
-  ((,) <$> hlineIntersect y a <*> hlineIntersect y b)
-    <|> ((,) <$> hlineIntersect y c <*> hlineIntersect y d)
-
--- | Intersection between a horizontal line and a line segment.
-hlineIntersect :: Int -> LineSegment -> Maybe Coordinates
-hlineIntersect y ls@((x1, y1), (x2, y2))
-  | y1 == y2 = Nothing
-  | otherwise =
-      case ((y - y1) * (x1 - x2)) `divMod` (y1 - y2) of
-        (d, 0) | (d + x1, y) `liesBetween` ls -> Just (d + x1, y)
-        _ -> Nothing
-
-liesBetween :: Coordinates -> LineSegment -> Bool
-liesBetween (x, y) ((x1, y1), (x2, y2)) =
-  x >= min x1 x2 && x <= max x1 x2 && y >= min y1 y2 && y <= max y1 y2
 
 mergeIntervals :: [Interval] -> [Interval]
 mergeIntervals = reverse . foldl' f [] . sortOn fst
@@ -67,22 +35,27 @@ mergeIntervals = reverse . foldl' f [] . sortOn fst
 intervalLength :: Interval -> Int
 intervalLength (s, e) = e - s + 1
 
-lineSegmentX :: LineSegment -> Interval
-lineSegmentX = bimap fst fst
-
 inInterval :: Int -> Interval -> Bool
 inInterval x (x1, x2) = x >= x1 && x <= x2
+
+noBeaconIntervals :: Int -> [SourceBeacon] -> [Interval]
+noBeaconIntervals y = mergeIntervals . mapMaybe (noBeaconInterval y)
+
+noBeaconInterval :: Int -> SourceBeacon -> Maybe Interval
+noBeaconInterval y (src@(sx, sy), beacon) = do
+  let d = dist src beacon
+      dy = abs (y - sy)
+  if dy > d
+    then Nothing
+    else Just (sx - d + dy, sx + d - dy)
+  where
+    dist (x1, y1) (x2, y2) = abs (x1 - x2) + abs (y1 - y2)
 
 solve1 :: ByteString -> ByteString
 solve1 s = do
   let srcBeacons = fmap parseSourceBeacon . B.lines $ s
-      parallelograms = uncurry sbParalellogram <$> srcBeacons
       y = 2000000
-      intervals =
-        mergeIntervals
-          . fmap lineSegmentX
-          . mapMaybe (hlineParIntersect y)
-          $ parallelograms
+      intervals = noBeaconIntervals y srcBeacons
       yBeaconsCount =
         length
           . fmap fst
@@ -93,3 +66,23 @@ solve1 s = do
           $ srcBeacons
       totalIntervalLength = sum . fmap intervalLength $ intervals
   bshow $ totalIntervalLength - yBeaconsCount
+
+solve2 :: ByteString -> ByteString
+solve2 s = do
+  let srcBeacons = fmap parseSourceBeacon . B.lines $ s
+      (start, end) = (0, 4000000)
+  bshow . freq . head . mapMaybe (f srcBeacons start end) $ [start .. end]
+  where
+    f srcBeacons start end y = do
+      let intervals =
+            takeWhile ((<= end) . fst)
+              . dropWhile ((< start) . snd)
+              . noBeaconIntervals y
+              $ srcBeacons
+      case intervals of
+        [(_, ie), (is', _)] | ie + 2 == is' -> Just (ie + 1, y)
+        [(is, _)] | is == start + 1 -> Just (start, y)
+        [(_, ie)] | ie == end - 1 -> Just (end, y)
+        _ -> Nothing
+
+    freq (x, y) = x * 4000000 + y
