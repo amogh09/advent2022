@@ -21,9 +21,7 @@ parseSourceBeacon s = do
     )
   where
     parseCoord = readInt . B.drop 2
-    readInt x = case B.readInt x of
-      Just (v, _) -> v
-      Nothing -> error "invalid input"
+    readInt = maybe (error "invalid input") fst . B.readInt
 
 mergeIntervals :: [Interval] -> [Interval]
 mergeIntervals = reverse . foldl' f [] . sortOn fst
@@ -46,21 +44,18 @@ noBeaconInterval :: Int -> SourceBeacon -> Maybe Interval
 noBeaconInterval y (src@(sx, sy), beacon) = do
   let d = dist src beacon
       dy = abs (y - sy)
-  if dy > d
-    then Nothing
-    else Just (sx - d + dy, sx + d - dy)
+  if dy > d then Nothing else Just (sx - d + dy, sx + d - dy)
 
 dist :: Coordinates -> Coordinates -> Int
 dist (x1, y1) (x2, y2) = abs (x1 - x2) + abs (y1 - y2)
 
+-- | Returns y-intercepts of the diamond's sides in pairs.
+-- The first pair contains intercepts with positive slopes and the second contains
+-- intercepts with negative slopes.
 yIntercepts :: SourceBeacon -> ([Int], [Int])
 yIntercepts (src@(sx, sy), beacon) = do
   let d = dist src beacon
-      pos1 = sy - (sx - d)
-      pos2 = sy - (sx + d)
-      neg1 = sy + (sx - d)
-      neg2 = sy + (sx + d)
-  ([pos1, pos2], [neg1, neg2])
+  ([sy - (sx - d), sy - (sx + d)], [sy + (sx - d), sy + (sx + d)])
 
 liesOn :: SourceBeacon -> Coordinates -> Bool
 liesOn (s, b) c = dist s b == dist s c
