@@ -21,6 +21,7 @@ common warnings
 common extensions
     default-extensions:
         BangPatterns
+        FlexibleContexts
         OverloadedRecordDot
         OverloadedStrings
         ScopedTypeVariables
@@ -36,6 +37,7 @@ library
         Advent.Day13
         Advent.Day14
         Advent.Day15
+        Advent.Day16
         Advent.Day2
         Advent.Day3
         Advent.Day4
@@ -53,6 +55,7 @@ library
         , bytestring  ^>=0.11.4.0
         , containers  ^>=0.6.7
         , extra       ^>=1.7.14
+        , mtl         ^>=2.3.1
         , split       ^>=0.2.3.5
         , vector      ^>=0.13.0.0
 

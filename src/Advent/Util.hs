@@ -7,6 +7,9 @@ module Advent.Util
     compareMaybe,
     third,
     uniq,
+    stripComma,
+    maximumMaybe,
+    tupleToList,
   )
 where
 
@@ -47,3 +50,15 @@ third (_, _, z) = z
 
 uniq :: Ord a => [a] -> [a]
 uniq = Set.toList . Set.fromList
+
+stripComma :: ByteString -> ByteString
+stripComma s
+  | B.last s == ',' = B.dropEnd 1 s
+  | otherwise = s
+
+maximumMaybe :: Ord a => [a] -> Maybe a
+maximumMaybe [] = Nothing
+maximumMaybe xs = Just $ maximum xs
+
+tupleToList :: (a, a) -> [a]
+tupleToList (x, y) = [x, y]

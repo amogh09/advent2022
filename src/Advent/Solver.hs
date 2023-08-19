@@ -7,6 +7,7 @@ import qualified Advent.Day12 as Day12
 import qualified Advent.Day13 as Day13
 import qualified Advent.Day14 as Day14
 import qualified Advent.Day15 as Day15
+import qualified Advent.Day16 as Day16
 import qualified Advent.Day2 as Day2
 import qualified Advent.Day3 as Day3
 import qualified Advent.Day4 as Day4
@@ -57,4 +58,5 @@ table "day14" "part1" = Day14.solve1
 table "day14" "part2" = Day14.solve2
 table "day15" "part1" = Day15.solve1
 table "day15" "part2" = Day15.solve2
+table "day16" "part1" = Day16.solve1
 table _ _ = error "bad input: day and part"
