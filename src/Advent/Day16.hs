@@ -1,27 +1,27 @@
 module Advent.Day16 (solve1, solve2) where
 
-import Advent.Util (bshow, maximumOnMaybe, stripComma)
+import Advent.Util (bshow, maximumOnMaybe, pairs, stripComma)
 import Data.Bifunctor (Bifunctor (bimap, second))
+import Data.Bits (shiftL, (.&.), (.|.))
 import qualified Data.ByteString.Char8 as SB
 import qualified Data.ByteString.Lazy.Char8 as LB
-import Data.Foldable (maximumBy)
-import Data.Function (on)
+import Data.Foldable (foldl')
 import Data.Map (Map)
 import qualified Data.Map as Map
 import Data.Maybe (fromMaybe)
-import Data.Set (Set)
 import qualified Data.Set as Set
+import Data.Tuple (swap)
 
 {- ORMOLU_DISABLE -}
 type Graph = Map RoomName (FlowRate, [RoomName])
 type RoomName = SB.ByteString
+type Indices = Map RoomName Int
 type FlowRate = Int
 type Minutes = Int
 type Pressure = Int
 type Distance = Int
 type Distances = Map RoomName [(RoomName, Distance)]
-type Path = [RoomName]
-type Visited = Set RoomName
+type Visited = Int
 {- ORMOLU_ENABLE -}
 
 hasPositiveFlowRate :: RoomName -> Graph -> Bool
@@ -32,6 +32,15 @@ connectedRooms g r = maybe [] snd . Map.lookup r $ g
 
 flowRate :: RoomName -> Graph -> FlowRate
 flowRate r = maybe 0 fst . Map.lookup r
+
+indices :: Graph -> Indices
+indices =
+  Map.fromList
+    . fmap (second (1 `shiftL`))
+    . (`zip` [0, 1 ..])
+    . fmap fst
+    . filter ((> 0) . fst . snd)
+    . Map.toList
 
 parseGraph :: LB.ByteString -> Graph
 parseGraph = Map.fromList . fmap parseRoom . LB.lines
@@ -72,41 +81,43 @@ allDistances start g =
   where
     shouldKeep r' = hasPositiveFlowRate r' g || r' == start
 
-dfs :: Graph -> Distances -> Visited -> (RoomName, Minutes, Pressure) -> [(Pressure, Path)]
-dfs g ds v (r, minsLeft, pressureSecured) = do
-  ((pressureSecured, [r]) :)
-    . fmap (second (r :))
+dfs :: Graph -> Indices -> Distances -> Visited -> (RoomName, Minutes, Pressure) -> [(Pressure, Visited)]
+dfs g is ds v (r, minsLeft, pressureSecured) = do
+  ((pressureSecured, fromMaybe 0 . Map.lookup r $ is) :)
+    . fmap (second (`addVisited` r))
     . concatMap (uncurry next)
     . filter ((< minsLeft) . snd)
-    . filter (not . (`Set.member` v) . fst)
+    . filter (maybe False ((== 0) . (v .&.)) . flip Map.lookup is . fst)
+    . filter ((/= "AA") . fst)
     . fromMaybe []
     . flip Map.lookup ds
     $ r
   where
     next r' d =
       let left = minsLeft - d - 1
-       in dfs g ds (Set.insert r v) (r', left, pressureSecured + flowRate r' g * left)
+       in dfs g is ds (addVisited v r) (r', left, pressureSecured + flowRate r' g * left)
+    addVisited x y = maybe x (x .|.) . Map.lookup y $ is
 
 solve1 :: LB.ByteString -> LB.ByteString
 solve1 s =
   let g = parseGraph s
       ds = allDistances "AA" g
-   in bshow . maybe 0 fst . maximumOnMaybe fst . dfs g ds Set.empty $ ("AA", 30, 0)
+      is = indices g
+   in bshow . maybe 0 fst . maximumOnMaybe fst . dfs g is ds 0 $ ("AA", 30, 0)
 
 solve2 :: LB.ByteString -> LB.ByteString
 solve2 s = do
   let g = parseGraph s
       start = ("AA", 26, 0)
       ds = allDistances "AA" g
-      findBest v = fromMaybe (0, []) . maximumOnMaybe fst . dfs g ds (Set.fromList v) $ start
-      (bestPressure, bestPath) = findBest []
-      (remainingPressure, remainingPath) = findBest bestPath
+      is = indices g
   bshow
-    . uncurry (+)
-    . bimap fst fst
-    . maximumBy (compare `on` (uncurry (+) . bimap fst fst))
-    . (((bestPressure, bestPath), (remainingPressure, remainingPath)) :)
-    . concatMap (\c@(_, p) -> fmap (c,) . dfs g ds (Set.fromList p) $ start)
-    . filter ((> remainingPressure) . fst)
-    . dfs g ds Set.empty
+    . maximum
+    . fmap (uncurry (+) . bimap snd snd)
+    . filter ((== 0) . uncurry (.&.) . bimap fst fst)
+    . pairs
+    . Map.toList
+    . foldl' (\m (v, p) -> Map.insertWith max v p m) Map.empty
+    . fmap swap
+    . dfs g is ds 0
     $ start

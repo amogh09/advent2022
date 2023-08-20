@@ -11,6 +11,7 @@ module Advent.Util
     maximumMaybe,
     tupleToList,
     maximumOnMaybe,
+    pairs,
   )
 where
 
@@ -18,6 +19,7 @@ import Data.ByteString.Lazy.Char8 (ByteString)
 import qualified Data.ByteString.Lazy.Char8 as B
 import Data.Foldable (maximumBy)
 import Data.Function (on)
+import Data.List (tails)
 import Data.List.Split (splitWhen)
 import qualified Data.Set as Set
 
@@ -69,3 +71,6 @@ tupleToList (x, y) = [x, y]
 maximumOnMaybe :: Ord b => (a -> b) -> [a] -> Maybe a
 maximumOnMaybe _ [] = Nothing
 maximumOnMaybe f xs = Just . maximumBy (compare `on` f) $ xs
+
+pairs :: [a] -> [(a, a)]
+pairs l = [(x, y) | (x : ys) <- tails l, y <- ys]

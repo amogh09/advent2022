@@ -1,10 +1,10 @@
 module Advent.Day15 (solve1, solve2) where
 
-import Advent.Util (bshow, uniq)
+import Advent.Util (bshow, pairs, uniq)
 import Control.Monad (liftM2)
 import Data.ByteString.Lazy.Char8 (ByteString)
 import qualified Data.ByteString.Lazy.Char8 as B
-import Data.List (foldl', sortOn, tails)
+import Data.List (foldl', sortOn)
 import Data.Maybe (catMaybes, mapMaybe)
 
 {- ORMOLU_DISABLE -}
@@ -99,9 +99,6 @@ solve1 s = do
           $ srcBeacons
       totalIntervalLength = sum . fmap intervalLength $ intervals
   bshow $ totalIntervalLength - yBeaconsCount
-
-pairs :: [a] -> [(a, a)]
-pairs l = [(x, y) | (x : ys) <- tails l, y <- ys]
 
 inBounds :: Int -> Int -> Coordinates -> Bool
 inBounds start end (x, y) = x >= start && x <= end && y >= start && y <= end
