@@ -10,11 +10,14 @@ module Advent.Util
     stripComma,
     maximumMaybe,
     tupleToList,
+    maximumOnMaybe,
   )
 where
 
 import Data.ByteString.Lazy.Char8 (ByteString)
 import qualified Data.ByteString.Lazy.Char8 as B
+import Data.Foldable (maximumBy)
+import Data.Function (on)
 import Data.List.Split (splitWhen)
 import qualified Data.Set as Set
 
@@ -58,7 +61,11 @@ stripComma s
 
 maximumMaybe :: Ord a => [a] -> Maybe a
 maximumMaybe [] = Nothing
-maximumMaybe xs = Just $ maximum xs
+maximumMaybe xs = Just . maximum $ xs
 
 tupleToList :: (a, a) -> [a]
 tupleToList (x, y) = [x, y]
+
+maximumOnMaybe :: Ord b => (a -> b) -> [a] -> Maybe a
+maximumOnMaybe _ [] = Nothing
+maximumOnMaybe f xs = Just . maximumBy (compare `on` f) $ xs

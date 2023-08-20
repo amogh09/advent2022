@@ -1,8 +1,11 @@
-module Advent.Day16 (solve1) where
+module Advent.Day16 (solve1, solve2) where
 
-import Advent.Util (bshow, maximumMaybe, stripComma)
+import Advent.Util (bshow, maximumOnMaybe, stripComma)
+import Data.Bifunctor (Bifunctor (bimap, second))
 import qualified Data.ByteString.Char8 as SB
 import qualified Data.ByteString.Lazy.Char8 as LB
+import Data.Foldable (maximumBy)
+import Data.Function (on)
 import Data.Map (Map)
 import qualified Data.Map as Map
 import Data.Maybe (fromMaybe)
@@ -17,6 +20,8 @@ type Minutes = Int
 type Pressure = Int
 type Distance = Int
 type Distances = Map RoomName [(RoomName, Distance)]
+type Path = [RoomName]
+type Visited = Set RoomName
 {- ORMOLU_ENABLE -}
 
 hasPositiveFlowRate :: RoomName -> Graph -> Bool
@@ -67,11 +72,11 @@ allDistances start g =
   where
     shouldKeep r' = hasPositiveFlowRate r' g || r' == start
 
-dfs :: Graph -> Distances -> Set RoomName -> (RoomName, Minutes, Pressure) -> Pressure
+dfs :: Graph -> Distances -> Visited -> (RoomName, Minutes, Pressure) -> [(Pressure, Path)]
 dfs g ds v (r, minsLeft, pressureSecured) = do
-  fromMaybe pressureSecured
-    . maximumMaybe
-    . fmap (uncurry next)
+  ((pressureSecured, [r]) :)
+    . fmap (second (r :))
+    . concatMap (uncurry next)
     . filter ((< minsLeft) . snd)
     . filter (not . (`Set.member` v) . fst)
     . fromMaybe []
@@ -86,4 +91,22 @@ solve1 :: LB.ByteString -> LB.ByteString
 solve1 s =
   let g = parseGraph s
       ds = allDistances "AA" g
-   in bshow $ dfs g ds Set.empty ("AA", 30, 0)
+   in bshow . maybe 0 fst . maximumOnMaybe fst . dfs g ds Set.empty $ ("AA", 30, 0)
+
+solve2 :: LB.ByteString -> LB.ByteString
+solve2 s = do
+  let g = parseGraph s
+      start = ("AA", 26, 0)
+      ds = allDistances "AA" g
+      findBest v = fromMaybe (0, []) . maximumOnMaybe fst . dfs g ds (Set.fromList v) $ start
+      (bestPressure, bestPath) = findBest []
+      (remainingPressure, remainingPath) = findBest bestPath
+  bshow
+    . uncurry (+)
+    . bimap fst fst
+    . maximumBy (compare `on` (uncurry (+) . bimap fst fst))
+    . (((bestPressure, bestPath), (remainingPressure, remainingPath)) :)
+    . concatMap (\c@(_, p) -> fmap (c,) . dfs g ds (Set.fromList p) $ start)
+    . filter ((> remainingPressure) . fst)
+    . dfs g ds Set.empty
+    $ start
