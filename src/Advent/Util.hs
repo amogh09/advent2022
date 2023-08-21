@@ -12,6 +12,7 @@ module Advent.Util
     tupleToList,
     maximumOnMaybe,
     pairs,
+    interleave,
   )
 where
 
@@ -74,3 +75,13 @@ maximumOnMaybe f xs = Just . maximumBy (compare `on` f) $ xs
 
 pairs :: [a] -> [(a, a)]
 pairs l = [(x, y) | (x : ys) <- tails l, y <- ys]
+
+-- >>> interleave "abc" "xyz"
+-- "axbycz"
+-- >>> interleave "a" "xyz"
+-- "axyz"
+-- >>> interleave "abc" "x"
+-- "axbc"
+interleave :: [a] -> [a] -> [a]
+interleave (x : xs) ys = x : interleave ys xs
+interleave [] ys = ys
