@@ -1,8 +1,10 @@
-module Advent.Day17 (solve1) where
+module Advent.Day17 (solve1, solve2) where
 
 import Advent.Util (bshow, interleave, maximumMaybe)
 import Data.Bifunctor (first, second)
 import qualified Data.ByteString.Lazy.Char8 as B
+import Data.Map (Map)
+import qualified Data.Map as Map
 import Data.Maybe (fromMaybe)
 import qualified Data.Set as Set
 import Prelude hiding (Left, Right)
@@ -25,7 +27,8 @@ data Chamber = Chamber
   { chamberLeftEdge :: Int,
     chamberRightEdge :: Int,
     chamberFloor :: Int,
-    chamberRocks :: [Rock]
+    chamberRocks :: Map Coordinates [Rock],
+    chamberHeighestPoint :: Int
   }
 
 data Move = Left | Right | Down
@@ -46,23 +49,28 @@ simulateRocks ms = do
       rocks = cycle [Horizontal og, Plus og, LMirror og, Vertical og, Square og]
   fmap tup3Snd
     . iterate (\(r : rs, c, ms) -> addTuple rs $ simulateRock ms (newRock r c) c)
-    $ (rocks, Chamber 0 8 0 [], moves)
+    $ (rocks, Chamber 0 8 0 Map.empty 0, moves)
   where
     addTuple x (y, z) = (x, y, z)
     tup3Snd (_, y, _) = y
 
     newRock :: Rock -> Chamber -> Rock
-    newRock (Horizontal _) c = Horizontal (c.chamberLeftEdge + 3, highestRock c + 4)
-    newRock (Plus _) c = Plus (c.chamberLeftEdge + 4, highestRock c + 5)
-    newRock (LMirror _) c = LMirror (c.chamberLeftEdge + 5, highestRock c + 4)
-    newRock (Vertical _) c = Vertical (c.chamberLeftEdge + 3, highestRock c + 4)
-    newRock (Square _) c = Square (c.chamberLeftEdge + 3, highestRock c + 4)
-
-highestRock :: Chamber -> Int
-highestRock c = fromMaybe c.chamberFloor . maximumMaybe . fmap topMost . chamberRocks $ c
+    newRock (Horizontal _) c = Horizontal (c.chamberLeftEdge + 3, c.chamberHeighestPoint + 4)
+    newRock (Plus _) c = Plus (c.chamberLeftEdge + 4, c.chamberHeighestPoint + 5)
+    newRock (LMirror _) c = LMirror (c.chamberLeftEdge + 5, c.chamberHeighestPoint + 4)
+    newRock (Vertical _) c = Vertical (c.chamberLeftEdge + 3, c.chamberHeighestPoint + 4)
+    newRock (Square _) c = Square (c.chamberLeftEdge + 3, c.chamberHeighestPoint + 4)
 
 addRock :: Chamber -> Rock -> Chamber
-addRock c r = c {chamberRocks = r : c.chamberRocks}
+addRock c r =
+  c
+    { chamberRocks =
+        Map.unionWith
+          (++)
+          (Map.fromList . (`zip` repeat [r]) . rectPoints . boundingRect $ r)
+          c.chamberRocks,
+      chamberHeighestPoint = max c.chamberHeighestPoint (topMost r)
+    }
 
 moveRock :: Rock -> Move -> Rock
 moveRock (Horizontal c) m = Horizontal (moveDelta m c)
@@ -81,18 +89,19 @@ collides r c = do
   leftMost r <= c.chamberLeftEdge
     || rightMost r >= c.chamberRightEdge
     || bottomMost r <= c.chamberFloor
-    || any (rockCollides r) c.chamberRocks
+    || any
+      (any (rockCollides r) . fromMaybe [] . flip Map.lookup c.chamberRocks)
+      (rectPoints . boundingRect $ r)
 
 rockCollides :: Rock -> Rock -> Bool
 rockCollides r r' | not (boundingRect r `rectsIntersect` boundingRect r') = False
 rockCollides r r' = not $ Set.fromList (allPoints r) `Set.disjoint` Set.fromList (allPoints r')
 
 boundingRect :: Rock -> Rectangle
-boundingRect (Horizontal (x, y)) = ((x, y), (x + 3, y))
-boundingRect (Plus (x, y)) = ((x - 1, y - 1), (x + 1, y + 1))
-boundingRect (LMirror (x, y)) = ((x - 2, y), (x, y + 2))
-boundingRect (Vertical (x, y)) = ((x, y), (x, y + 3))
-boundingRect (Square (x, y)) = ((x, y), (x + 1, y + 1))
+boundingRect r = ((leftMost r, bottomMost r), (rightMost r, topMost r))
+
+rectPoints :: Rectangle -> [Coordinates]
+rectPoints ((x1, y1), (x2, y2)) = [(x, y) | x <- [x1 .. x2], y <- [y1 .. y2]]
 
 rectsIntersect :: Rectangle -> Rectangle -> Bool
 rectsIntersect ((r1x1, r1y1), (r1x2, r1y2)) ((r2x1, r2y1), (r2x2, r2y2)) =
@@ -140,5 +149,11 @@ parseMoves = fmap parseMove . B.unpack
     parseMove '>' = Right
     parseMove x = error $ "invalid move: " <> show x
 
+solve :: Int -> B.ByteString -> B.ByteString
+solve n = bshow . chamberHeighestPoint . (!! n) . simulateRocks . parseMoves
+
 solve1 :: B.ByteString -> B.ByteString
-solve1 = bshow . maximum . fmap topMost . chamberRocks . (!! 2022) . simulateRocks . parseMoves
+solve1 = solve 2022
+
+solve2 :: B.ByteString -> B.ByteString
+solve2 = solve 1000000000000
