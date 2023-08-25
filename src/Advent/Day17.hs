@@ -150,7 +150,7 @@ isAnyPrefixCyclic size f xs
           (ls, rs) = splitAt (n `div` 2) candidate
       n >= threshold && fmap f ls == fmap f rs
 
-    threshold = 5500
+    threshold = 5560 -- Heuristic found by testing manually
 
 parseMoves :: B.ByteString -> [Move]
 parseMoves = fmap parseMove . B.unpack
