@@ -4,9 +4,7 @@ import Advent.Util (bshow, interleave)
 import Data.Bifunctor (bimap, first, second)
 import Data.Bits (Bits (shiftR), shiftL, (.&.), (.|.))
 import qualified Data.ByteString.Lazy.Char8 as B
-import Data.List (find, findIndex, inits, tails)
-import Data.Maybe (fromMaybe, isJust)
-import Debug.Trace (traceShow, traceShowId)
+import Data.List (find, findIndex, inits)
 import Prelude hiding (Left, Right)
 
 {- ORMOLU_DISABLE -}
@@ -103,24 +101,22 @@ simulateRocks n parsedMoves = do
     go :: RockCount -> (Moves, [Rock], Chamber) -> Int
     go rc (ms, r : rs, c)
       | rc > n = rowYCoord . head . removeWalls $ c
-      | otherwise = case isAnyPrefixCyclic rowBitMask . removeWalls $ c of
+      | otherwise = case isAnyPrefixCyclic rc rowBitMask . removeWalls $ c of
           Just (cyclicPart, basePart) -> do
-            let (cl, bl) = (length cyclicPart, length basePart - 1)
-                brc = traceShow (cyclicPart, basePart) $ rowRockCount (head basePart)
-                crc = traceShowId (rowRockCount (head cyclicPart)) - traceShowId brc
-                (q, r) = (n - brc) `divMod` crc
-                modPartLength =
-                  maybe (error $ "no chamber row with rock: " <> show r) rowYCoord
-                    . find ((r + brc `elem`) . rowRocks)
+            let cl = length cyclicPart
+                brc = rowRockCount (head basePart)
+                crc = rowRockCount (head cyclicPart) - brc
+                (q, remainder) = (n - brc) `divMod` crc
+                remainderLen =
+                  maybe (error $ "no chamber row with rock: " <> show remainder) rowYCoord
+                    . find ((remainder + brc `elem`) . rowRocks)
                     $ cyclicPart
-            q * cl + modPartLength
+            q * cl + remainderLen
           Nothing -> do
             let (r', c') = newRock r c
                 (c'', ms') = simulateRock (rc, r') c' ms
             go (rc + 1) (ms', rs, c'')
     go _ _ = error "ran out of rocks"
-
-    thrd (_, _, z) = z
 
     newRock :: Rock -> Chamber -> (Rock, Chamber)
     newRock r c =
@@ -133,52 +129,28 @@ simulateRocks n parsedMoves = do
     wallsRow :: YCoordinate -> ChamberRow
     wallsRow y = ChamberRow {rowYCoord = y, rowBitMask = walls, rowRockCount = 0, rowRocks = []}
 
-renderChamber :: Chamber -> String
-renderChamber = unlines . fmap (toString . rowBitMask)
-  where
-    toString :: BitMask -> String
-
-    toChar 1 = '#'
-    toChar 0 = '.'
-    toChar c = error $ "unknown char: " <> show c
-
-    renderWalls cs = '|' : (init . tail $ cs) ++ "|"
-    renderFloor cs | cs == "|#######|" = "+-------+"
-    renderFloor cs = cs
-
-    toString =
-      renderFloor
-        . renderWalls
-        . fmap toChar
-        . reverse
-        . fmap snd
-        . tail
-        . takeWhile (/= (0, 0))
-        . iterate ((`divMod` 2) . fst)
-        . (,0)
-
 removeWalls :: Chamber -> Chamber
 removeWalls = dropWhile ((== walls) . rowBitMask)
 
 walls :: BitMask
 walls = 257
 
-isAnyPrefixCyclic :: (Eq b, Show a, Eq b) => (a -> b) -> [a] -> Maybe ([a], [a])
-isAnyPrefixCyclic f xs
-  | length xs < threshold = Nothing
+isAnyPrefixCyclic :: (Eq b, Show a, Eq b) => Int -> (a -> b) -> [a] -> Maybe ([a], [a])
+isAnyPrefixCyclic size f xs
+  | size < threshold = Nothing
   | otherwise = do
       case findIndex isCyclic . inits $ xs of
         Nothing -> Nothing
-        Just i -> traceShow ("cycle found", i) $ do
+        Just i -> do
           let (ls, rs) = splitAt i xs
           Just (drop (i `div` 2) ls, rs)
   where
-    isCyclic xs = do
-      let n = length xs
-          (ls, rs) = splitAt (n `div` 2) xs
+    isCyclic candidate = do
+      let n = length candidate
+          (ls, rs) = splitAt (n `div` 2) candidate
       n >= threshold && fmap f ls == fmap f rs
 
-    threshold = 100
+    threshold = 5500
 
 parseMoves :: B.ByteString -> [Move]
 parseMoves = fmap parseMove . B.unpack
