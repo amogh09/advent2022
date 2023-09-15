@@ -1,17 +1,15 @@
-module Advent.Day19 (solve1) where
+module Advent.Day19 (solve1, solve2) where
 
 import Advent.Util (bshow, maximumMaybe, readInt)
 import Control.Monad.Reader (MonadReader)
 import qualified Control.Monad.Reader as Reader
 import Control.Monad.State (MonadState)
 import qualified Control.Monad.State as State
-import Data.Bifunctor (Bifunctor (second))
 import Data.ByteString.Lazy.Char8 (ByteString)
 import qualified Data.ByteString.Lazy.Char8 as B
 import Data.Map (Map)
 import qualified Data.Map as Map
-import Data.Maybe (fromMaybe, mapMaybe)
-import Debug.Trace (traceShow, traceShowId)
+import Data.Maybe (catMaybes, fromMaybe, mapMaybe)
 
 {- ORMOLU_DISABLE -}
 type Ore = Int
@@ -101,26 +99,52 @@ doNothing :: Inventory -> Inventory
 doNothing inv = updateResources inv.invMinutesRemaining (0, 0, 0, 0) inv
 
 nextStates :: Blueprint -> Inventory -> [Inventory]
-nextStates bp inv =
-  mapMaybe (\f -> f bp inv) [makeGeodeRobotNext, makeObsidianRobotNext, makeClayRobotNext, makeOreRobotNext]
+nextStates bp inv = do
+  let maxOreRobots = maximum [bp.bpOre, bp.bpClay, fst bp.bpObsidian, fst bp.bpGeode]
+      maxClayRobots = snd bp.bpObsidian
+      maxObsidianRobots = snd bp.bpGeode
+  if inv.invOreRobot >= fst bp.bpGeode && inv.invObsidianRobot >= snd bp.bpGeode
+    then catMaybes [makeGeodeRobotNext bp inv]
+    else
+      mapMaybe (\f -> f bp inv) . catMaybes $
+        [ Just makeGeodeRobotNext,
+          if inv.invOreRobot < maxOreRobots then Just makeOreRobotNext else Nothing,
+          if inv.invClayRobot < maxClayRobots then Just makeClayRobotNext else Nothing,
+          if inv.invObsidianRobot < maxObsidianRobots then Just makeObsidianRobotNext else Nothing
+        ]
 
-simulate ::
-  (MonadReader Blueprint m, MonadState (Map Inventory Geode) m) => Inventory -> m Geode
--- simulate inv = traceShow inv $ do
-simulate inv = do
-  cache <- State.get
-  if invMinutesRemaining inv == 0
-    then pure $ invGeode inv
+data SearchState = SearchState
+  { searchCache :: Map Inventory Geode,
+    searchCurrentBest :: Geode
+  }
+
+search ::
+  (MonadReader Blueprint m, MonadState SearchState m) => Inventory -> m Geode
+search inv | inv.invMinutesRemaining == 0 = pure $ inv.invGeode
+search inv = do
+  s <- State.get
+  let cache = s.searchCache
+      currentBest = s.searchCurrentBest
+      bestPossible =
+        inv.invGeode
+          + inv.invGeodeRobot * inv.invMinutesRemaining
+          + (inv.invMinutesRemaining * (inv.invMinutesRemaining - 1) `div` 2)
+  if bestPossible <= currentBest
+    then pure 0
     else maybe compute pure $ Map.lookup inv cache
   where
     compute = do
       bp <- Reader.ask
       res <-
         fmap (fromMaybe (invGeode . doNothing $ inv) . maximumMaybe)
-          . mapM simulate
+          . mapM search
           . nextStates bp
           $ inv
-      State.modify $ Map.insert inv res
+      State.modify $ \s ->
+        s
+          { searchCache = Map.insert inv res s.searchCache,
+            searchCurrentBest = max res s.searchCurrentBest
+          }
       pure res
 
 parseBps :: ByteString -> [Blueprint]
@@ -137,25 +161,11 @@ parseBp s = do
     }
 
 solve1 :: ByteString -> ByteString
-solve1 s = do
-  let start =
-        Inventory
-          { invOre = 0,
-            invClay = 0,
-            invObsidian = 0,
-            invGeode = 0,
-            invOreRobot = 1,
-            invClayRobot = 0,
-            invObsidianRobot = 0,
-            invGeodeRobot = 0,
-            invMinutesRemaining = 24
-          }
-  bshow
-    . sum
-    . zipWith (*) [1, 2 ..]
-    . fmap fst
-    . traceShowId
-    . fmap (second Map.size)
-    . fmap (\bp -> State.runState (Reader.runReaderT (simulate start) bp) Map.empty)
-    . parseBps
-    $ s
+solve1 = bshow . sum . zipWith (*) [1, 2 ..] . solve (Inventory 0 0 0 0 1 0 0 0 24) . parseBps
+
+solve2 :: ByteString -> ByteString
+solve2 = bshow . product . solve (Inventory 0 0 0 0 1 0 0 0 32) . take 3 . parseBps
+
+solve :: Functor f => Inventory -> f Blueprint -> f Geode
+solve start =
+  fmap (\bp -> State.evalState (Reader.runReaderT (search start) bp) (SearchState Map.empty 0))
