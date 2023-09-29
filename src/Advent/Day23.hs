@@ -105,11 +105,6 @@ solve1 s = do
     . iterate round
     $ ([northProposal, southProposal, westProposal, eastProposal], elves)
 
-firstDup :: Eq a => [a] -> a
-firstDup (x : x' : xs)
-  | x == x' = x
-  | otherwise = firstDup (x' : xs)
-
 solve2 :: ByteString -> ByteString
 solve2 s = do
   let rounds =
