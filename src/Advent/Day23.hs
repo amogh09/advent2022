@@ -9,37 +9,27 @@ import Data.Map (Map)
 import qualified Data.Map as Map
 import Data.Maybe (fromJust, fromMaybe, isJust, listToMaybe, mapMaybe)
 import Data.Set (Set)
-import qualified Data.Set as Set
+import qualified Data.Set as S
 import Prelude hiding (round)
 
+{- ORMOLU_DISABLE -}
 type Elf = (Int, Int)
-
 type Elves = Set Elf
-
 type Proposal = Elves -> Elf -> Maybe Elf
-
 type Rectangle = (Elf, Elf)
+{- ORMOLU_ENABLE -}
 
-northProposal :: Proposal
-northProposal es (r, c) = mkProposal es [(r - 1, c - 1), (r - 1, c), (r - 1, c + 1)] (r - 1, c)
-
-southProposal :: Proposal
-southProposal es (r, c) = mkProposal es [(r + 1, c - 1), (r + 1, c), (r + 1, c + 1)] (r + 1, c)
-
-westProposal :: Proposal
-westProposal es (r, c) = mkProposal es [(r + 1, c - 1), (r, c - 1), (r - 1, c - 1)] (r, c - 1)
-
-eastProposal :: Proposal
-eastProposal es (r, c) = mkProposal es [(r + 1, c + 1), (r, c + 1), (r - 1, c + 1)] (r, c + 1)
-
-mkProposal :: Elves -> [Elf] -> Elf -> Maybe Elf
-mkProposal elves ps p =
-  if ps `noneInSet` elves
-    then Just p
-    else Nothing
+proposals :: [Proposal]
+proposals = [northProposal, southProposal, westProposal, eastProposal]
+  where
+    northProposal es (r, c) = mkProposal es [(r - 1, c - 1), (r - 1, c), (r - 1, c + 1)] (r - 1, c)
+    southProposal es (r, c) = mkProposal es [(r + 1, c - 1), (r + 1, c), (r + 1, c + 1)] (r + 1, c)
+    westProposal es (r, c) = mkProposal es [(r + 1, c - 1), (r, c - 1), (r - 1, c - 1)] (r, c - 1)
+    eastProposal es (r, c) = mkProposal es [(r + 1, c + 1), (r, c + 1), (r - 1, c + 1)] (r, c + 1)
+    mkProposal elves ps p = if ps `noneInSet` elves then Just p else Nothing
 
 noneInSet :: (Foldable t, Ord a) => t a -> Set a -> Bool
-noneInSet xs set = not . any (`Set.member` set) $ xs
+noneInSet xs set = not . any (`S.member` set) $ xs
 
 elfProposal :: Elves -> [Proposal] -> Elf -> Maybe Elf
 elfProposal es ps e = listToMaybe . mapMaybe (\p -> p es e) $ ps
@@ -49,7 +39,7 @@ proposeAll ps elves es =
   fmap (second fromJust) . filter (isJust . snd) . zip es . fmap (elfProposal elves ps) $ es
 
 hasNeighbor :: Elves -> Elf -> Bool
-hasNeighbor elves = any (`Set.member` elves) . neighborhood
+hasNeighbor elves = any (`S.member` elves) . neighborhood
   where
     neighborhood p = topLevel p ++ sameLevel p ++ bottomLevel p
     topLevel (r, c) = [(r - 1, c - 1), (r - 1, c), (r - 1, c + 1)]
@@ -59,13 +49,8 @@ hasNeighbor elves = any (`Set.member` elves) . neighborhood
 round :: ([Proposal], Elves) -> ([Proposal], Elves)
 round (ps, elves) = do
   let (prevs, news) =
-        unzip
-          . removeDups
-          . proposeAll ps elves
-          . filter (hasNeighbor elves)
-          . Set.toList
-          $ elves
-  (tail ps ++ [head ps], Set.fromList news `Set.union` (elves `Set.difference` Set.fromList prevs))
+        unzip . removeDups . proposeAll ps elves . filter (hasNeighbor elves) . S.toList $ elves
+  (tail ps ++ [head ps], S.fromList news `S.union` (elves `S.difference` S.fromList prevs))
   where
     removeDups es = do
       let proposedCount = counter . fmap snd $ es
@@ -76,7 +61,7 @@ counter = foldl' (\m k -> Map.insertWith (+) k 1 m) Map.empty
 
 parseElves :: ByteString -> Elves
 parseElves =
-  Set.fromList . concat . zipWith (\r cs -> fmap (r,) cs) [0, 1 ..] . fmap parseRow . B.lines
+  S.fromList . concat . zipWith (\r cs -> fmap (r,) cs) [0, 1 ..] . fmap parseRow . B.lines
   where
     parseRow = fmap fst . filter ((== '#') . snd) . zip [0, 1 ..] . B.unpack
 
@@ -85,10 +70,10 @@ boundingRect elves = (topLeft, bottomRight)
   where
     topLeft = (lowestRow, lowestCol)
     bottomRight = (highestRow, highestCol)
-    lowestRow = minimum . fmap fst . Set.toList $ elves
-    lowestCol = minimum . fmap snd . Set.toList $ elves
-    highestRow = maximum . fmap fst . Set.toList $ elves
-    highestCol = maximum . fmap snd . Set.toList $ elves
+    lowestRow = minimum . fmap fst . S.toList $ elves
+    lowestCol = minimum . fmap snd . S.toList $ elves
+    highestRow = maximum . fmap fst . S.toList $ elves
+    highestCol = maximum . fmap snd . S.toList $ elves
 
 rectArea :: Rectangle -> Int
 rectArea ((x1, y1), (x2, y2)) = (abs (x1 - x2) + 1) * (abs (y1 - y2) + 1)
@@ -103,16 +88,11 @@ solve1 s = do
     . snd
     . (!! 10)
     . iterate round
-    $ ([northProposal, southProposal, westProposal, eastProposal], elves)
+    $ (proposals, elves)
 
 solve2 :: ByteString -> ByteString
 solve2 s = do
-  let rounds =
-        fmap snd
-          . iterate round
-          . ([northProposal, southProposal, westProposal, eastProposal],)
-          . parseElves
-          $ s
+  let rounds = fmap snd . iterate round . (proposals,) . parseElves $ s
   bshow
     . fst
     . head
