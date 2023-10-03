@@ -19,19 +19,15 @@ import Data.Maybe (fromJust, fromMaybe, isJust)
 import Data.Set (Set)
 import qualified Data.Set as Set
 
+{- ORMOLU_DISABLE -}
 data Blizzard = Blizzard Direction Row Col deriving (Show)
-
 type Row = Int
-
 type Col = Int
-
 data Direction = East | South | West | North deriving (Eq, Ord, Enum, Show)
-
 type Blizzards = (IntMap [Blizzard], IntMap [Blizzard])
-
 type Minutes = Int
-
 data Valley = Valley Row Col Blizzards deriving (Show)
+{- ORMOLU_ENABLE -}
 
 blizzDir :: Blizzard -> Direction
 blizzDir (Blizzard d _ _) = d
@@ -50,16 +46,16 @@ blizzardPos (Valley maxRow maxCol _) m (Blizzard d r c) = Blizzard d r' c'
     rowDelta = [0, 1, 0, -1]
     colDelta = [1, 0, -1, 0]
 
+{- ORMOLU_DISABLE -}
 type BFSState = ((Row, Col), Minutes)
-
 type Layer = [BFSState]
-
 type BFSEnv = (Valley, (Row, Col), (Row, Col))
+{- ORMOLU_ENABLE -}
 
 bfs :: (MonadReader BFSEnv m, MonadState (Set BFSState) m) => Layer -> m Minutes
 bfs layer = do
   (_, _, end) <- Reader.ask
-  maybe compute (pure . snd) (find ((== end) . fst) layer)
+  maybe compute (pure . snd) . find ((== end) . fst) $ layer
   where
     compute = mapM nextLayer layer >>= bfs . concat
     nextLayer ((r, c), mins) = do
@@ -94,9 +90,6 @@ inValley (Valley maxRow maxCol _, start, end) (r, c) =
     || (r, c) == end
     || (((1, 1), (maxRow - 1, maxCol - 1)) `inRange` (r, c))
 
--- start :: (Row, Col)
--- start = (0, 1)
-
 valleyEnd :: Valley -> (Row, Col)
 valleyEnd (Valley maxRow maxCol _) = (maxRow, maxCol - 1)
 
@@ -112,7 +105,12 @@ parseValley s = do
       cols = length . B.unpack . head . B.lines $ s
   Valley (rows - 1) (cols - 1) (rowMap bs, colMap bs)
   where
-    parseRow = fmap (second fromJust) . filter (isJust . snd) . zip [0, 1 ..] . fmap parseDir . B.unpack
+    parseRow =
+      fmap (second fromJust)
+        . filter (isJust . snd)
+        . zip [0, 1 ..]
+        . fmap parseDir
+        . B.unpack
     parseDir '#' = Nothing
     parseDir '.' = Nothing
     parseDir '>' = Just East
