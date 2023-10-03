@@ -32,7 +32,7 @@ fromSNAFU = foldl' (\s x -> s * 5 + fromSNAFUBit x) 0
     fromSNAFUBit '0' = 0
     fromSNAFUBit '-' = -1
     fromSNAFUBit '=' = -2
-    fromSNAFUBit x = error $ "invalid SNAFU bit" <> show x
+    fromSNAFUBit x = error $ "invalid SNAFU bit: " <> show x
 
 solve1 :: B.ByteString -> B.ByteString
 solve1 = B.pack . toSNAFU . sum . fmap (fromSNAFU . B.unpack) . B.lines
