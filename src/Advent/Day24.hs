@@ -24,7 +24,7 @@ data Blizzard = Blizzard Direction Row Col deriving (Show)
 type Row = Int
 type Col = Int
 data Direction = East | South | West | North deriving (Eq, Ord, Enum, Show)
-type Blizzards = (IntMap [Blizzard], IntMap [Blizzard])
+type Blizzards = (IntMap [Blizzard], IntMap [Blizzard]) -- Blizzards by row num and col num
 type Minutes = Int
 data Valley = Valley Row Col Blizzards deriving (Show)
 {- ORMOLU_ENABLE -}
@@ -74,9 +74,9 @@ bfs layer = do
 
 escapesBlizzards :: Valley -> BFSState -> Bool
 escapesBlizzards v@(Valley _ _ (rbs, cbs)) ((r, c), mins) =
-  all ((/= (r, c)) . blizzRowCol . blizzardPos v mins) bs
-  where
-    bs = fromMaybe [] (IntMap.lookup r rbs) ++ fromMaybe [] (IntMap.lookup c cbs)
+  all
+    ((/= (r, c)) . blizzRowCol . blizzardPos v mins)
+    (fromMaybe [] (IntMap.lookup r rbs) ++ fromMaybe [] (IntMap.lookup c cbs))
 
 blizzRowCol :: Blizzard -> (Row, Col)
 blizzRowCol (Blizzard _ r c) = (r, c)
