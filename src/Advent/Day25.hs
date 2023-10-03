@@ -7,9 +7,7 @@ type SNAFU = String
 
 snafuFacorize :: Integral t => t -> [t]
 snafuFacorize 0 = []
-snafuFacorize x = do
-  let (q, r) = snafuDivMod x
-  r : snafuFacorize q
+snafuFacorize x = let (q, r) = snafuDivMod x in r : snafuFacorize q
 
 snafuBit :: (Eq a, Num a, Show a) => a -> Char
 snafuBit 2 = '2'
@@ -24,9 +22,7 @@ toSNAFU 0 = "0"
 toSNAFU x = reverse . fmap snafuBit . snafuFacorize $ x
 
 snafuDivMod :: Integral b => b -> (b, b)
-snafuDivMod x = do
-  let (q, r) = x `divMod` 5
-  if r > 2 then (q + 1, r - 5) else (q, r)
+snafuDivMod x = let (q, r) = x `divMod` 5 in if r > 2 then (q + 1, r - 5) else (q, r)
 
 fromSNAFU :: Num a => SNAFU -> a
 fromSNAFU = foldl' (\s x -> s * 5 + fromSNAFUBit x) 0
