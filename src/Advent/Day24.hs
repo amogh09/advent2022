@@ -106,11 +106,7 @@ parseValley s = do
   Valley (rows - 1) (cols - 1) (rowMap bs, colMap bs)
   where
     parseRow =
-      fmap (second fromJust)
-        . filter (isJust . snd)
-        . zip [0, 1 ..]
-        . fmap parseDir
-        . B.unpack
+      fmap (second fromJust) . filter (isJust . snd) . zip [0, 1 ..] . fmap parseDir . B.unpack
     parseDir '#' = Nothing
     parseDir '.' = Nothing
     parseDir '>' = Just East
