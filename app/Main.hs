@@ -6,5 +6,5 @@ import System.Environment (getArgs)
 
 main :: IO ()
 main = do
-  [day, part, inputType] <- getArgs
-  solve day part inputType >>= B.putStrLn
+  [year, day, part, inputType] <- getArgs
+  solve year day part inputType >>= B.putStrLn

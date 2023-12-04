@@ -41,13 +41,13 @@ library
         Advent.Day17
         Advent.Day18
         Advent.Day19
+        Advent.Day2
         Advent.Day20
         Advent.Day21
         Advent.Day22
         Advent.Day23
         Advent.Day24
         Advent.Day25
-        Advent.Day2
         Advent.Day3
         Advent.Day4
         Advent.Day5
@@ -57,6 +57,7 @@ library
         Advent.Day9
         Advent.Solver
         Advent.Util
+        Advent.Y2023.Day1
 
     build-depends:
         , array       ^>=0.5.4.0
@@ -64,6 +65,7 @@ library
         , bytestring  ^>=0.11.4.0
         , containers  ^>=0.6.7
         , extra       ^>=1.7.14
+        , filepath    ^>=1.4.200.1
         , mtl         ^>=2.3.1
         , split       ^>=0.2.3.5
         , vector      ^>=0.13.0.0
